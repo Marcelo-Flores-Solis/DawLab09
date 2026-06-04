@@ -208,9 +208,7 @@ Content-Type: application/json
 
 ##  Video demostrativo
 
-[https://youtu.be/JrpOj8n4zG8?feature=shared]
-
-📺 **[Ver demostración](https://youtu.be/JrpOj8n4zG8?feature=shared)**
+**[Ver demostración](https://youtu.be/JrpOj8n4zG8?feature=shared)**
 
 ---
 
