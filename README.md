@@ -124,7 +124,7 @@ La API queda disponible en `http://127.0.0.1:8000/api/`
 
 ---
 
-## 🔌Endpoints de la API
+## Endpoints de la API
 
 Base URL: `http://127.0.0.1:8000/api/`
 
@@ -212,7 +212,7 @@ Content-Type: application/json
 
 ---
 
-## 👥 Autores
+##  Autores
 
 | Nombre | Correo |
 |---|---|
