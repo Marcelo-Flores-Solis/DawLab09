@@ -86,12 +86,14 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
-        'USER': 'postgres.kipmeyeflojsuuscgjer',
-        'PASSWORD': 'B5-Q4WzSaMkp!tW',
+        # Nota que el usuario en el pooler requiere el "postgres." seguido de tu ID de proyecto
+        'USER': 'postgres.kipmeyeflojsuuscgjer', 
+        'PASSWORD': 'B5-Q4WzSaMkp!tW', # Reemplaza por tu contraseña
         'HOST': 'aws-1-us-east-2.pooler.supabase.com',
-        'PORT': '5432',
+        'PORT': '5432', # o 6543, ambos suelen funcionar con el pooler de Supabase
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

@@ -1,32 +1,36 @@
+
+
 from rest_framework import serializers
-from .models import Categoria, Producto, Pedido, DetallePedido, Direccion
+from .models import *
 
-class ProductoSerializer(serializers.ModelSerializer):
+class ProductSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Producto
+        model = Product
         fields = '__all__'
 
-class DetallePedidoSerializer(serializers.ModelSerializer):
+class OrderDetailSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DetallePedido
+        model = orderDetail
         fields = '__all__'
 
-class DireccionSerializer(serializers.ModelSerializer):
+class AdressSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Direccion
+        model = Adress
+        fields = '__all__'
+
+class CategorySerializer(serializers.ModelSerializer):
+  
+    productos = ProductSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Category
         fields = '__all__'
 
 
-class CategoriaSerializer(serializers.ModelSerializer):
-    productos = ProductoSerializer(many=True, read_only=True, source='producto_set')
+class OrderSerializer(serializers.ModelSerializer):
+   
+    detalles = OrderDetailSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Categoria
-        fields = ['id', 'nombre', 'descripcion', 'productos']
-
-class PedidoSerializer(serializers.ModelSerializer):
-    detalles = DetallePedidoSerializer(many=True, read_only=True, source='detallepedido_set')
-
-    class Meta:
-        model = Pedido
-        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'detalles']
+        model = Order
+        fields = ['id', 'name', 'user', 'date', 'status', 'total', 'detalles'] 

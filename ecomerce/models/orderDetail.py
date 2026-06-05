@@ -1,17 +1,17 @@
 from django.db import models
-from .pedido import Pedido
-from .producto import Producto
+from .order import Order
+from .product import Product
 
 
-class DetallePedido(models.Model):
+class orderDetail(models.Model):
 
     pedido = models.ForeignKey(
-        Pedido,
+        Order,
         on_delete=models.CASCADE
     )
 
     producto = models.ForeignKey(
-        Producto,
+        Product,
         on_delete=models.CASCADE
     )
 

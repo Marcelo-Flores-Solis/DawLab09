@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-class Direccion(models.Model):
+class Adress(models.Model):
 
     usuario = models.ForeignKey(
         User,

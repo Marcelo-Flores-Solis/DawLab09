@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-class Pedido(models.Model):
+class Order(models.Model):
 
     ESTADOS = [
         ('pendiente', 'Pendiente'),

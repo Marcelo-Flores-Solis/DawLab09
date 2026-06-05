@@ -23,20 +23,21 @@ urlpatterns = [
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from ecomerce.views import (
-    CategoriaViewSet, 
-    ProductoViewSet, 
-    PedidoViewSet, 
-    DetallePedidoViewSet, 
-    DireccionViewSet
+    CategoryViewSet, 
+    ProductViewSet, 
+    OrderViewSet, 
+    OrderDetailViewSet, 
+    AdressViewSet
 )
 
 router = DefaultRouter()
-router.register(r'categorias', CategoriaViewSet)
-router.register(r'productos', ProductoViewSet)
-router.register(r'pedidos', PedidoViewSet)
-router.register(r'detalles-pedido', DetallePedidoViewSet)
-router.register(r'direcciones', DireccionViewSet)
+router.register(r'categorys', CategoryViewSet)
+router.register(r'products', ProductViewSet)
+router.register(r'orders', OrderViewSet)
+router.register(r'order-details', OrderDetailViewSet)
+router.register(r'adresses', AdressViewSet)
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    path('admin/', admin.site.urls),
 ]

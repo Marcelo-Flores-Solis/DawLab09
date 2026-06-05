@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from .categoria import Categoria
+from .category import Category
 
 
 def validar_precio(valor):
@@ -13,7 +13,7 @@ def validar_stock(valor):
         raise ValidationError("El stock no puede ser negativo")
 
 
-class Producto(models.Model):
+class Product(models.Model):
     nombre = models.CharField(max_length=150)
     descripcion = models.TextField()
     precio = models.DecimalField(
@@ -23,7 +23,7 @@ class Producto(models.Model):
     )
     stock = models.IntegerField(validators=[validar_stock])
     categoria = models.ForeignKey(
-        Categoria,
+        Category,
         on_delete=models.CASCADE
     )
     creado = models.DateTimeField(auto_now_add=True)

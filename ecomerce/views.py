@@ -2,31 +2,31 @@ from django.shortcuts import render
 
 # Create your views here.
 from rest_framework import viewsets
-from .models import Categoria, Producto, Pedido, DetallePedido, Direccion
+from .models import *
 from .serializers import (
-    CategoriaSerializer, 
-    ProductoSerializer, 
-    PedidoSerializer, 
-    DetallePedidoSerializer, 
-    DireccionSerializer
+    CategorySerializer, 
+    ProductSerializer, 
+    OrderSerializer, 
+    OrderDetailSerializer, 
+    AdressSerializer
 )
 
-class CategoriaViewSet(viewsets.ModelViewSet):
-    queryset = Categoria.objects.all()
-    serializer_class = CategoriaSerializer
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all().order_by('id')
+    serializer_class = CategorySerializer
 
-class ProductoViewSet(viewsets.ModelViewSet):
-    queryset = Producto.objects.all()
-    serializer_class = ProductoSerializer
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all().order_by('id')
+    serializer_class = ProductSerializer
 
-class PedidoViewSet(viewsets.ModelViewSet):
-    queryset = Pedido.objects.all()
-    serializer_class = PedidoSerializer
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
 
-class DetallePedidoViewSet(viewsets.ModelViewSet):
-    queryset = DetallePedido.objects.all()
-    serializer_class = DetallePedidoSerializer
+class OrderDetailViewSet(viewsets.ModelViewSet):
+    queryset = orderDetail.objects.all()
+    serializer_class = OrderDetailSerializer
 
-class DireccionViewSet(viewsets.ModelViewSet):
-    queryset = Direccion.objects.all()
-    serializer_class = DireccionSerializer
+class AdressViewSet(viewsets.ModelViewSet):
+    queryset = Adress.objects.all()
+    serializer_class = AdressSerializer
