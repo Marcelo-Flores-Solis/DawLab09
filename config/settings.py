@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'ecomerce'
 
 ]
@@ -92,6 +93,11 @@ DATABASES = {
         'HOST': 'aws-1-us-east-2.pooler.supabase.com',
         'PORT': '5432', # o 6543, ambos suelen funcionar con el pooler de Supabase
     }
+}
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 

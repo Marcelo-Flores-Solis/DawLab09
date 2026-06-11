@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+
 from django.urls import path
 
 urlpatterns = [
@@ -29,7 +30,7 @@ from ecomerce.views import (
     OrderDetailViewSet, 
     AdressViewSet
 )
-
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 router = DefaultRouter()
 router.register(r'categorys', CategoryViewSet)
 router.register(r'products', ProductViewSet)
@@ -40,4 +41,6 @@ router.register(r'adresses', AdressViewSet)
 urlpatterns = [
     path('api/', include(router.urls)),
     path('admin/', admin.site.urls),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(template_name="swagger-ui.html", url_name="schema"), name="swagger-ui"),
 ]
