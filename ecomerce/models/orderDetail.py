@@ -7,7 +7,8 @@ class orderDetail(models.Model):
 
     pedido = models.ForeignKey(
         Order,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='detalles'
     )
 
     producto = models.ForeignKey(

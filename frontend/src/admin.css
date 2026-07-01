@@ -1,0 +1,393 @@
+/* Estilos del panel de administración, aislados bajo .admin-panel para no
+   interferir con la tienda. Reutiliza las variables de :root de index.css. */
+
+.admin-panel {
+  max-width: 1080px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.admin-brand {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.admin-brand .brand-mark {
+  color: var(--accent);
+}
+
+.admin-topbar nav {
+  display: flex;
+  gap: 4px;
+}
+
+.admin-topbar nav a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 999px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.admin-topbar nav a:hover {
+  color: var(--text);
+  background: var(--bg);
+}
+
+.admin-topbar nav a.active {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.admin-topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-user {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.admin-content {
+  padding: 32px;
+  flex: 1;
+}
+
+.admin-content h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.admin-content h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* Tarjetas y tablas */
+.admin-panel .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 22px;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-panel table.card {
+  padding: 8px 22px;
+  border-collapse: collapse;
+}
+
+.admin-panel table.card th,
+.admin-panel table.card td {
+  text-align: left;
+  padding: 13px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-panel table.card th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.admin-panel table.card tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-panel table.card tbody tr:hover {
+  background: var(--bg);
+}
+
+/* Formularios */
+.admin-panel .form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 480px;
+}
+
+.admin-panel .form input,
+.admin-panel .form select,
+.admin-panel .form textarea {
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-panel .form input:focus,
+.admin-panel .form select:focus,
+.admin-panel .form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.admin-panel .form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.admin-panel .actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Botones */
+.admin-panel button {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-panel button:hover {
+  background: var(--accent-hover);
+}
+
+.admin-panel button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* La barra superior usa botones/enlaces "ghost" ya definidos en index.css
+   (.ghost-btn); los sobreescribimos aquí para el contexto admin. */
+.admin-panel .ghost-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-weight: 500;
+}
+
+.admin-panel .ghost-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+  border-color: #d8d8de;
+}
+
+/* Botones secundarios (Editar/Eliminar/Cancelar) — estilo ghost */
+.admin-panel .row-actions button,
+.admin-panel .actions button[type='button'] {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  padding: 7px 14px;
+}
+
+.admin-panel .row-actions button:hover,
+.admin-panel .actions button[type='button']:hover {
+  background: var(--bg);
+  color: var(--text);
+  border-color: #d8d8de;
+}
+
+.admin-panel .row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-panel .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.admin-panel .cards-grid .card {
+  margin-bottom: 0;
+}
+
+.admin-panel .cards-grid ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Mensajes */
+.admin-panel .error {
+  color: var(--danger);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.admin-panel .success {
+  color: var(--success);
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.admin-panel .hint {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.admin-panel .hint code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 13px;
+}
+
+/* --- Pedidos: constructor de líneas, edición y chips --- */
+.admin-panel .id-chip {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.admin-panel .card-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-panel .order-meta {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 4px 0 8px;
+}
+
+.admin-panel .status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.admin-panel .status-pendiente { background: #fef9ec; border-color: #f5e0a3; color: #8a6d1a; }
+.admin-panel .status-pagado    { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.admin-panel .status-enviado   { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+
+/* Constructor de línea: producto + cantidad + botón en una fila */
+.admin-panel .line-builder {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-panel .line-builder select { flex: 1; min-width: 160px; }
+.admin-panel .line-builder input[type='number'] { width: 90px; }
+.admin-panel .line-builder button { white-space: nowrap; }
+
+/* Lista de líneas en borrador (antes de crear el pedido) */
+.admin-panel .draft-lines {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.admin-panel .draft-lines li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.admin-panel .draft-lines li + li { border-top: 1px dashed var(--border); }
+
+.admin-panel .draft-lines .draft-total {
+  font-weight: 700;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+.admin-panel .order-detail-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.admin-panel .order-detail-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+/* Botón "✕" para quitar una línea */
+.admin-panel .line-remove {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.admin-panel .line-remove:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* Bloque de edición dentro de la tarjeta del pedido */
+.admin-panel .order-editor {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { login } from '../api/auth'
 
 export default function LoginPage() {
@@ -8,6 +8,8 @@ export default function LoginPage() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from || '/'
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -15,8 +17,8 @@ export default function LoginPage() {
     setError(null)
     try {
       await login(username, password)
-      navigate('/', { replace: true })
-    } catch (err) {
+      navigate(from, { replace: true })
+    } catch {
       setError('Usuario o contraseña incorrectos.')
     } finally {
       setLoading(false)
@@ -25,29 +27,38 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <form className="card form" onSubmit={handleSubmit}>
-        <h2>Iniciar sesión</h2>
-        {error && <p className="error">{error}</p>}
-        <input
-          placeholder="Usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-          required
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <div className="actions">
-          <button type="submit" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
+      <div className="login-card">
+        <div className="login-brand">
+          <span className="brand-mark">◆</span>
+          <span className="brand-name">Aurum<span className="brand-accent">Store</span></span>
         </div>
-      </form>
+        <h2>Bienvenido de vuelta</h2>
+        <p className="muted login-sub">Inicia sesión para comprar y ver tus pedidos.</p>
+
+        {error && <p className="error">{error}</p>}
+
+        <form className="form" onSubmit={handleSubmit}>
+          <input
+            placeholder="Usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoFocus
+            required
+          />
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button className="add-btn" type="submit" disabled={loading}>
+            {loading ? 'Ingresando…' : 'Ingresar'}
+          </button>
+        </form>
+
+        <Link to="/" className="continue-link">← Volver a la tienda</Link>
+      </div>
     </div>
   )
 }

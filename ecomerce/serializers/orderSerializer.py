@@ -9,3 +9,5 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
+        # El total lo calcula el servidor a partir de los detalles.
+        read_only_fields = ['total', 'fecha']

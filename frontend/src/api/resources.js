@@ -6,6 +6,7 @@ function crudFor(resource) {
     get: (id) => api.get(`/${resource}/${id}/`).then((res) => res.data),
     create: (data) => api.post(`/${resource}/`, data).then((res) => res.data),
     update: (id, data) => api.put(`/${resource}/${id}/`, data).then((res) => res.data),
+    patch: (id, data) => api.patch(`/${resource}/${id}/`, data).then((res) => res.data),
     remove: (id) => api.delete(`/${resource}/${id}/`),
   }
 }

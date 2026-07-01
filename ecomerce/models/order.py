@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 from django.contrib.auth.models import User
 
 
@@ -28,6 +29,15 @@ class Order(models.Model):
         decimal_places=2,
         default=0
     )
+
+    def recalcular_total(self):
+        """Recalcula el total sumando los subtotales de los detalles.
+
+        El total nunca se confía al cliente: se calcula en el servidor a
+        partir de las líneas del pedido, evitando que se pueda falsear.
+        """
+        self.total = self.detalles.aggregate(s=Sum('subtotal'))['s'] or 0
+        self.save(update_fields=['total'])
 
     def __str__(self):
         return f"Pedido #{self.id} - {self.usuario.username}"
