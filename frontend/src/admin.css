@@ -382,6 +382,34 @@
   border-color: #fecaca;
 }
 
+/* Vista previa de imagen en el formulario de producto */
+.admin-panel .img-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* Miniatura de imagen en la tabla de productos */
+.admin-panel .cell-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.admin-panel .cell-thumb--empty {
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--bg);
+}
+
 /* Bloque de edición dentro de la tarjeta del pedido */
 .admin-panel .order-editor {
   margin-top: 12px;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { categoriesApi, productsApi } from '../api/resources'
 
-const emptyForm = { nombre: '', descripcion: '', precio: '', stock: '', categoria: '' }
+const emptyForm = { nombre: '', descripcion: '', precio: '', stock: '', categoria: '', imagen: '' }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([])
@@ -46,6 +46,7 @@ export default function ProductsPage() {
       precio: form.precio,
       stock: Number(form.stock),
       categoria: Number(form.categoria),
+      imagen: form.imagen.trim(),
     }
     setSaving(true)
     setError(null)
@@ -76,6 +77,7 @@ export default function ProductsPage() {
       precio: product.precio,
       stock: product.stock,
       categoria: product.categoria,
+      imagen: product.imagen ?? '',
     })
   }
 
@@ -109,6 +111,16 @@ export default function ProductsPage() {
             <option key={c.id} value={c.id}>{c.nombre}</option>
           ))}
         </select>
+        <input
+          name="imagen"
+          type="url"
+          placeholder="URL de la imagen (opcional): https://…"
+          value={form.imagen}
+          onChange={handleChange}
+        />
+        {form.imagen.trim() && (
+          <img src={form.imagen.trim()} alt="Vista previa" className="img-preview" />
+        )}
         <div className="actions">
           <button type="submit" disabled={saving}>
             {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear producto'}
@@ -125,13 +137,18 @@ export default function ProductsPage() {
         <table className="card">
           <thead>
             <tr>
-              <th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Categoría</th><th></th>
+              <th>ID</th><th></th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Categoría</th><th></th>
             </tr>
           </thead>
           <tbody>
             {products.map((p) => (
               <tr key={p.id}>
                 <td>{p.id}</td>
+                <td>
+                  {p.imagen
+                    ? <img src={p.imagen} alt="" className="cell-thumb" />
+                    : <span className="cell-thumb cell-thumb--empty">—</span>}
+                </td>
                 <td>{p.nombre}</td>
                 <td>S/. {p.precio}</td>
                 <td>{p.stock}</td>

@@ -1,6 +1,9 @@
-// El backend no guarda imágenes de producto, así que generamos un
-// placeholder visual atractivo: un degradado estable derivado del id
-// y un emoji según la categoría.
+// Miniatura del producto. Si el producto tiene una imagen por enlace (imagen),
+// se muestra esa foto; si no hay enlace —o si el enlace falla al cargar— se cae
+// a un placeholder visual: un degradado estable según el id y un emoji según
+// la categoría.
+
+import { useState } from 'react'
 
 const EMOJI_BY_KEYWORD = [
   [/celul|phone|smart/i, '📱'],
@@ -29,7 +32,24 @@ function emojiFor(categoryName = '') {
   return '🛍️'
 }
 
-export default function ProductThumb({ id = 0, categoryName = '', size = 'card' }) {
+export default function ProductThumb({ id = 0, categoryName = '', imageUrl = '', size = 'card' }) {
+  const [failed, setFailed] = useState(false)
+  const showImage = imageUrl && !failed
+
+  if (showImage) {
+    return (
+      <div className={`product-thumb product-thumb--${size}`}>
+        <img
+          src={imageUrl}
+          alt=""
+          className="product-thumb-img"
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      </div>
+    )
+  }
+
   const gradient = GRADIENTS[id % GRADIENTS.length]
   return (
     <div className={`product-thumb product-thumb--${size}`} style={{ background: gradient }}>

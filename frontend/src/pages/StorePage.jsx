@@ -110,7 +110,7 @@ export default function StorePage() {
               const outOfStock = p.stock <= 0
               return (
                 <article className="product-card" key={p.id}>
-                  <ProductThumb id={p.id} categoryName={categoryName[p.categoria]} />
+                  <ProductThumb id={p.id} categoryName={categoryName[p.categoria]} imageUrl={p.imagen} />
                   <div className="product-body">
                     <span className="product-cat">{categoryName[p.categoria] ?? 'General'}</span>
                     <h3 className="product-name">{p.nombre}</h3>

@@ -36,6 +36,7 @@ export function CartProvider({ children }) {
           precio: product.precio,
           stock: product.stock,
           categoria: product.categoria,
+          imagen: product.imagen,
           cantidad: Math.min(qty, product.stock),
         },
       ]

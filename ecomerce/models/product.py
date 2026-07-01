@@ -22,6 +22,11 @@ class Product(models.Model):
         validators=[validar_precio]
     )
     stock = models.IntegerField(validators=[validar_stock])
+    imagen = models.URLField(
+        max_length=500,
+        blank=True,
+        default=''
+    )
     categoria = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,

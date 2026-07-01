@@ -57,7 +57,7 @@ export default function CartPage() {
         <div className="cart-items">
           {items.map((item) => (
             <div className="cart-item" key={item.id}>
-              <ProductThumb id={item.id} size="mini" />
+              <ProductThumb id={item.id} size="mini" imageUrl={item.imagen} />
               <div className="cart-item-info">
                 <h3>{item.nombre}</h3>
                 <span className="product-price">S/ {Number(item.precio).toFixed(2)}</span>
