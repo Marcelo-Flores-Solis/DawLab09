@@ -1,27 +1,27 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-
-const CartContext = createContext(null)
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import type { CartItem, Product } from '../types'
+import { CartContext } from './cart-context'
 
 // Carrito por navegador (permite comprar como invitado y conservar los
 // productos al iniciar sesión en el checkout). Se vacía al cerrar sesión.
 const STORAGE_KEY = 'cart'
 
-function loadInitial() {
+function loadInitial(): CartItem[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
+    return (JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as CartItem[]) || []
   } catch {
     return []
   }
 }
 
-export function CartProvider({ children }) {
-  const [items, setItems] = useState(loadInitial)
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>(loadInitial)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   }, [items])
 
-  const addItem = useCallback((product, qty = 1) => {
+  const addItem = useCallback((product: Product, qty = 1) => {
     setItems((prev) => {
       const existing = prev.find((p) => p.id === product.id)
       if (existing) {
@@ -43,7 +43,7 @@ export function CartProvider({ children }) {
     })
   }, [])
 
-  const setQty = useCallback((id, cantidad) => {
+  const setQty = useCallback((id: number, cantidad: number) => {
     setItems((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, cantidad: Math.max(1, Math.min(cantidad, p.stock)) } : p
@@ -51,7 +51,7 @@ export function CartProvider({ children }) {
     )
   }, [])
 
-  const removeItem = useCallback((id) => {
+  const removeItem = useCallback((id: number) => {
     setItems((prev) => prev.filter((p) => p.id !== id))
   }, [])
 
@@ -65,10 +65,4 @@ export function CartProvider({ children }) {
       {children}
     </CartContext.Provider>
   )
-}
-
-export function useCart() {
-  const ctx = useContext(CartContext)
-  if (!ctx) throw new Error('useCart debe usarse dentro de <CartProvider>')
-  return ctx
 }

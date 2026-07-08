@@ -1,16 +1,57 @@
-# React + Vite
+# AurumStore · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+E-commerce frontend del proyecto integrador (Laboratorio 10).
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19 + Vite + TypeScript** (tipado estricto, sin `any`).
+- **React Router** para el enrutamiento SPA.
+- **TanStack Query** para todas las peticiones al backend (caché, estados de
+  carga/error, invalidación tras mutaciones).
+- **`fetch` nativo** encapsulado en la capa `api/` (sin Axios).
 
-## React Compiler
+## Estructura
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+src/
+├── api/         Servicios HTTP con fetch (client, auth, resources, checkout)
+├── components/  UI reutilizable (Navbar, ProductCard, ProductList, ...)
+├── context/     Estado global de cliente (carrito, toasts)
+├── hooks/       Custom hooks con useQuery / useMutation (TanStack Query)
+├── pages/       Vistas enrutadas (catálogo, detalle, carrito, panel admin)
+└── types/       Interfaces del dominio (Product, Category, Order, ...)
+```
 
-## Expanding the Oxlint configuration
+## Rutas principales
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Ruta               | Vista                         |
+| ------------------ | ----------------------------- |
+| `/`                | Catálogo (`StorePage`)        |
+| `/producto/:id`    | Detalle (`ProductDetailPage`) |
+| `/carrito`         | Carrito                       |
+| `/mis-pedidos`     | Pedidos del usuario (privada) |
+| `/admin/*`         | Panel de administración (staff)|
+| `*` (desconocida)  | Redirige a `/`                |
+
+## Scripts
+
+```bash
+npm install       # instalar dependencias
+npm run dev       # servidor de desarrollo
+npm run typecheck # comprobación de tipos (tsc --noEmit)
+npm run build     # build de producción (tsc -b && vite build)
+npm run preview   # previsualizar el build
+```
+
+## Configuración
+
+Copia `.env.example` a `.env` y define la URL del backend:
+
+```
+VITE_API_URL=http://127.0.0.1:8000/api
+```
+
+## Despliegue (Vercel)
+
+El archivo `vercel.json` reescribe todas las rutas a `index.html` para que el
+enrutado del lado del cliente funcione al recargar (SPA fallback).

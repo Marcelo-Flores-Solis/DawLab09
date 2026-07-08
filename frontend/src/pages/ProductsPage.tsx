@@ -1,46 +1,53 @@
-import { useEffect, useState } from 'react'
-import { categoriesApi, productsApi } from '../api/resources'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useProducts,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProduct,
+} from '../hooks/useProducts'
+import { useCategories } from '../hooks/useCategories'
+import type { Product } from '../types'
+import type { ProductPayload } from '../api/resources'
 
-const emptyForm = { nombre: '', descripcion: '', precio: '', stock: '', categoria: '', imagen: '' }
+interface ProductForm {
+  nombre: string
+  descripcion: string
+  precio: string
+  stock: string
+  categoria: string
+  imagen: string
+}
+
+const emptyForm: ProductForm = {
+  nombre: '',
+  descripcion: '',
+  precio: '',
+  stock: '',
+  categoria: '',
+  imagen: '',
+}
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([])
-  const [categories, setCategories] = useState([])
-  const [form, setForm] = useState(emptyForm)
-  const [editingId, setEditingId] = useState(null)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { data: products = [], isLoading, isError } = useProducts()
+  const { data: categories = [] } = useCategories()
+  const createProduct = useCreateProduct()
+  const updateProduct = useUpdateProduct()
+  const deleteProduct = useDeleteProduct()
 
-  async function loadAll() {
-    setLoading(true)
-    try {
-      const [productsData, categoriesData] = await Promise.all([
-        productsApi.list(),
-        categoriesApi.list(),
-      ])
-      setProducts(productsData)
-      setCategories(categoriesData)
-      setError(null)
-    } catch (err) {
-      setError('No se pudo conectar con la API. ¿Está corriendo el backend en :8000?')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [form, setForm] = useState<ProductForm>(emptyForm)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadAll()
-  }, [])
+  const saving = createProduct.isPending || updateProduct.isPending
 
-  function handleChange(e) {
+  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const payload = {
+    const payload: ProductPayload = {
       nombre: form.nombre,
       descripcion: form.descripcion,
       precio: form.precio,
@@ -48,35 +55,31 @@ export default function ProductsPage() {
       categoria: Number(form.categoria),
       imagen: form.imagen.trim(),
     }
-    setSaving(true)
     setError(null)
     setSuccess(null)
     try {
       if (editingId) {
-        await productsApi.update(editingId, payload)
+        await updateProduct.mutateAsync({ id: editingId, data: payload })
         setSuccess('Producto actualizado.')
       } else {
-        await productsApi.create(payload)
+        await createProduct.mutateAsync(payload)
         setSuccess('Producto creado.')
       }
       setForm(emptyForm)
       setEditingId(null)
-      await loadAll()
-    } catch (err) {
+    } catch {
       setError('Error al guardar el producto. Revisa los campos (precio > 0, stock >= 0).')
-    } finally {
-      setSaving(false)
     }
   }
 
-  function startEdit(product) {
+  function startEdit(product: Product) {
     setEditingId(product.id)
     setForm({
       nombre: product.nombre,
       descripcion: product.descripcion,
       precio: product.precio,
-      stock: product.stock,
-      categoria: product.categoria,
+      stock: String(product.stock),
+      categoria: String(product.categoria),
       imagen: product.imagen ?? '',
     })
   }
@@ -86,17 +89,20 @@ export default function ProductsPage() {
     setForm(emptyForm)
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: number) {
     if (!confirm('¿Eliminar este producto?')) return
-    await productsApi.remove(id)
+    await deleteProduct.mutateAsync(id)
     setSuccess('Producto eliminado.')
-    loadAll()
   }
 
   return (
     <div>
       <h2>Productos</h2>
-      {error && <p className="error">{error}</p>}
+      {(isError || error) && (
+        <p className="error">
+          {error ?? 'No se pudo conectar con la API. ¿Está corriendo el backend en :8000?'}
+        </p>
+      )}
       {success && <p className="success">{success}</p>}
 
       <form className="card form" onSubmit={handleSubmit}>
@@ -108,7 +114,9 @@ export default function ProductsPage() {
         <select name="categoria" value={form.categoria} onChange={handleChange} required>
           <option value="">Selecciona categoría</option>
           {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
           ))}
         </select>
         <input
@@ -125,11 +133,15 @@ export default function ProductsPage() {
           <button type="submit" disabled={saving}>
             {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear producto'}
           </button>
-          {editingId && <button type="button" onClick={cancelEdit} disabled={saving}>Cancelar</button>}
+          {editingId && (
+            <button type="button" onClick={cancelEdit} disabled={saving}>
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
 
-      {loading ? (
+      {isLoading ? (
         <p>Cargando...</p>
       ) : products.length === 0 ? (
         <p className="hint">Aún no hay productos. Crea uno con el formulario de arriba.</p>
@@ -137,7 +149,13 @@ export default function ProductsPage() {
         <table className="card">
           <thead>
             <tr>
-              <th>ID</th><th></th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Categoría</th><th></th>
+              <th>ID</th>
+              <th></th>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Categoría</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -145,9 +163,11 @@ export default function ProductsPage() {
               <tr key={p.id}>
                 <td>{p.id}</td>
                 <td>
-                  {p.imagen
-                    ? <img src={p.imagen} alt="" className="cell-thumb" />
-                    : <span className="cell-thumb cell-thumb--empty">—</span>}
+                  {p.imagen ? (
+                    <img src={p.imagen} alt="" className="cell-thumb" />
+                  ) : (
+                    <span className="cell-thumb cell-thumb--empty">—</span>
+                  )}
                 </td>
                 <td>{p.nombre}</td>
                 <td>S/. {p.precio}</td>

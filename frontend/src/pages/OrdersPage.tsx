@@ -1,54 +1,54 @@
-import { useEffect, useState } from 'react'
-import { ordersApi, orderDetailsApi, productsApi } from '../api/resources'
+import { useState, type FormEvent } from 'react'
+import { useOrders, useCreateOrder, useCreateOrderDetail, useUpdateOrderStatus, useDeleteOrder, useDeleteOrderDetail } from '../hooks/useOrders'
+import { useProducts } from '../hooks/useProducts'
+import type { Order, OrderStatus } from '../types'
 
-const ESTADOS = ['pendiente', 'pagado', 'enviado']
-const emptyLine = { producto: '', cantidad: '1' }
+const ESTADOS: OrderStatus[] = ['pendiente', 'pagado', 'enviado']
+
+interface DraftLine {
+  producto: string
+  cantidad: string
+}
+
+const emptyLine: DraftLine = { producto: '', cantidad: '1' }
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState([])
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
+  const { data: orders = [], isLoading, isError } = useOrders()
+  const { data: products = [] } = useProducts()
+
+  const createOrder = useCreateOrder()
+  const createOrderDetail = useCreateOrderDetail()
+  const updateStatus = useUpdateOrderStatus()
+  const deleteOrder = useDeleteOrder()
+  const deleteOrderDetail = useDeleteOrderDetail()
+
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   // --- Formulario unificado: crear pedido CON sus líneas de una sola vez ---
   const [usuario, setUsuario] = useState('')
-  const [estado, setEstado] = useState('pendiente')
-  const [lines, setLines] = useState([]) // [{ producto, cantidad }]
-  const [lineDraft, setLineDraft] = useState(emptyLine)
-  const [creating, setCreating] = useState(false)
+  const [estado, setEstado] = useState<OrderStatus>('pendiente')
+  const [lines, setLines] = useState<DraftLine[]>([])
+  const [lineDraft, setLineDraft] = useState<DraftLine>(emptyLine)
 
   // --- Edición de un pedido existente (sólo admin) ---
-  const [editingId, setEditingId] = useState(null)
-  const [editEstado, setEditEstado] = useState('pendiente')
-  const [editLine, setEditLine] = useState(emptyLine)
-  const [busy, setBusy] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editEstado, setEditEstado] = useState<OrderStatus>('pendiente')
+  const [editLine, setEditLine] = useState<DraftLine>(emptyLine)
 
-  async function load() {
-    setLoading(true)
-    try {
-      const [ordersData, productsData] = await Promise.all([
-        ordersApi.list(),
-        productsApi.list(),
-      ])
-      setOrders(ordersData)
-      setProducts(productsData)
-      setError(null)
-    } catch {
-      setError('No se pudo conectar con la API.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const busy =
+    createOrder.isPending ||
+    createOrderDetail.isPending ||
+    updateStatus.isPending ||
+    deleteOrder.isPending ||
+    deleteOrderDetail.isPending
 
-  useEffect(() => {
-    load()
-  }, [])
+  const productName = (id: number | string) =>
+    products.find((p) => p.id === Number(id))?.nombre ?? `Producto #${id}`
+  const productPrice = (id: number | string) =>
+    Number(products.find((p) => p.id === Number(id))?.precio ?? 0)
 
-  const productName = (id) => products.find((p) => p.id === Number(id))?.nombre ?? `Producto #${id}`
-  const productPrice = (id) => Number(products.find((p) => p.id === Number(id))?.precio ?? 0)
-
-  function flash(msg) {
+  function flash(msg: string) {
     setSuccess(msg)
     setError(null)
   }
@@ -60,25 +60,24 @@ export default function OrdersPage() {
     setLineDraft(emptyLine)
   }
 
-  function removeDraftLine(idx) {
+  function removeDraftLine(idx: number) {
     setLines(lines.filter((_, i) => i !== idx))
   }
 
   const draftTotal = lines.reduce(
     (sum, l) => sum + productPrice(l.producto) * Number(l.cantidad),
-    0,
+    0
   )
 
-  async function handleCreate(e) {
+  async function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!usuario) return
-    setCreating(true)
     setError(null)
     setSuccess(null)
     try {
-      const order = await ordersApi.create({ usuario: Number(usuario), estado })
+      const order = await createOrder.mutateAsync({ usuario: Number(usuario), estado })
       for (const l of lines) {
-        await orderDetailsApi.create({
+        await createOrderDetail.mutateAsync({
           pedido: order.id,
           producto: Number(l.producto),
           cantidad: Number(l.cantidad),
@@ -89,16 +88,13 @@ export default function OrdersPage() {
       setLines([])
       setLineDraft(emptyLine)
       flash(`Pedido #${order.id} creado con ${lines.length} producto(s).`)
-      await load()
     } catch {
       setError('Error al crear el pedido. Verifica que el ID de usuario exista (Django Admin).')
-    } finally {
-      setCreating(false)
     }
   }
 
   // ---------- Editar pedido existente ----------
-  function startEdit(order) {
+  function startEdit(order: Order) {
     setEditingId(order.id)
     setEditEstado(order.estado)
     setEditLine(emptyLine)
@@ -111,74 +107,58 @@ export default function OrdersPage() {
     setEditLine(emptyLine)
   }
 
-  async function saveEstado(orderId) {
-    setBusy(true)
+  async function saveEstado(orderId: number) {
     try {
-      await ordersApi.patch(orderId, { estado: editEstado })
+      await updateStatus.mutateAsync({ id: orderId, estado: editEstado })
       flash(`Pedido #${orderId} actualizado.`)
-      await load()
     } catch {
       setError('No se pudo actualizar el estado.')
-    } finally {
-      setBusy(false)
     }
   }
 
-  async function addLineToOrder(orderId) {
+  async function addLineToOrder(orderId: number) {
     if (!editLine.producto || Number(editLine.cantidad) < 1) return
-    setBusy(true)
     try {
-      await orderDetailsApi.create({
+      await createOrderDetail.mutateAsync({
         pedido: orderId,
         producto: Number(editLine.producto),
         cantidad: Number(editLine.cantidad),
       })
       setEditLine(emptyLine)
       flash(`Producto agregado al pedido #${orderId}.`)
-      await load()
     } catch {
       setError('No se pudo agregar el producto.')
-    } finally {
-      setBusy(false)
     }
   }
 
-  async function removeLineFromOrder(detailId, orderId) {
+  async function removeLineFromOrder(detailId: number, orderId: number) {
     if (!confirm('¿Quitar este producto del pedido?')) return
-    setBusy(true)
     try {
-      await orderDetailsApi.remove(detailId)
+      await deleteOrderDetail.mutateAsync(detailId)
       flash(`Producto quitado del pedido #${orderId}.`)
-      await load()
     } catch {
       setError('No se pudo quitar el producto.')
-    } finally {
-      setBusy(false)
     }
   }
 
-  async function handleDeleteOrder(id) {
+  async function handleDeleteOrder(id: number) {
     if (!confirm('¿Eliminar este pedido y sus detalles?')) return
-    setBusy(true)
     try {
-      await ordersApi.remove(id)
+      await deleteOrder.mutateAsync(id)
       flash('Pedido eliminado.')
-      await load()
     } catch {
       setError('No se pudo eliminar el pedido.')
-    } finally {
-      setBusy(false)
     }
   }
 
   return (
     <div>
       <h2>Pedidos</h2>
-      {error && <p className="error">{error}</p>}
+      {(isError || error) && <p className="error">{error ?? 'No se pudo conectar con la API.'}</p>}
       {success && <p className="success">{success}</p>}
       <p className="hint">
-        No hay endpoint de usuarios expuesto: usa el ID de un usuario existente (ver Django Admin en <code>/admin/</code>).
-        El precio y el total se calculan en el servidor.
+        No hay endpoint de usuarios expuesto: usa el ID de un usuario existente (ver Django Admin en{' '}
+        <code>/admin/</code>). El precio y el total se calculan en el servidor.
       </p>
 
       {/* Crear pedido y llenarlo en un solo formulario */}
@@ -192,8 +172,12 @@ export default function OrdersPage() {
           onChange={(e) => setUsuario(e.target.value)}
           required
         />
-        <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-          {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+        <select value={estado} onChange={(e) => setEstado(e.target.value as OrderStatus)}>
+          {ESTADOS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
 
         <div className="line-builder">
@@ -203,7 +187,9 @@ export default function OrdersPage() {
           >
             <option value="">Selecciona producto</option>
             {products.map((p) => (
-              <option key={p.id} value={p.id}>{p.nombre} — S/. {p.precio}</option>
+              <option key={p.id} value={p.id}>
+                {p.nombre} — S/. {p.precio}
+              </option>
             ))}
           </select>
           <input
@@ -213,16 +199,22 @@ export default function OrdersPage() {
             value={lineDraft.cantidad}
             onChange={(e) => setLineDraft({ ...lineDraft, cantidad: e.target.value })}
           />
-          <button type="button" onClick={addLineToDraft}>Añadir producto</button>
+          <button type="button" onClick={addLineToDraft}>
+            Añadir producto
+          </button>
         </div>
 
         {lines.length > 0 && (
           <ul className="draft-lines">
             {lines.map((l, i) => (
               <li key={i}>
-                <span>{productName(l.producto)} × {l.cantidad}</span>
+                <span>
+                  {productName(l.producto)} × {l.cantidad}
+                </span>
                 <span>S/. {(productPrice(l.producto) * Number(l.cantidad)).toFixed(2)}</span>
-                <button type="button" className="line-remove" onClick={() => removeDraftLine(i)}>✕</button>
+                <button type="button" className="line-remove" onClick={() => removeDraftLine(i)}>
+                  ✕
+                </button>
               </li>
             ))}
             <li className="draft-total">
@@ -233,13 +225,13 @@ export default function OrdersPage() {
         )}
 
         <div className="actions">
-          <button type="submit" disabled={creating}>
-            {creating ? 'Guardando...' : 'Crear pedido'}
+          <button type="submit" disabled={createOrder.isPending}>
+            {createOrder.isPending ? 'Guardando...' : 'Crear pedido'}
           </button>
         </div>
       </form>
 
-      {loading ? (
+      {isLoading ? (
         <p>Cargando...</p>
       ) : orders.length === 0 ? (
         <p className="hint">Aún no hay pedidos. Crea uno con el formulario de arriba.</p>
@@ -250,14 +242,18 @@ export default function OrdersPage() {
             return (
               <div className="card" key={order.id}>
                 <div className="row-actions">
-                  <h3>Pedido <span className="id-chip">#{order.id}</span></h3>
+                  <h3>
+                    Pedido <span className="id-chip">#{order.id}</span>
+                  </h3>
                   <div className="card-btns">
                     {editing ? (
                       <button onClick={cancelEdit}>Cerrar</button>
                     ) : (
                       <button onClick={() => startEdit(order)}>Editar</button>
                     )}
-                    <button onClick={() => handleDeleteOrder(order.id)} disabled={busy}>Eliminar</button>
+                    <button onClick={() => handleDeleteOrder(order.id)} disabled={busy}>
+                      Eliminar
+                    </button>
                   </div>
                 </div>
 
@@ -265,14 +261,18 @@ export default function OrdersPage() {
                   Usuario ID: {order.usuario} · {new Date(order.fecha).toLocaleString()} ·{' '}
                   <span className={`status-badge status-${order.estado}`}>{order.estado}</span>
                 </p>
-                <p><strong>Total: S/. {Number(order.total).toFixed(2)}</strong></p>
+                <p>
+                  <strong>Total: S/. {Number(order.total).toFixed(2)}</strong>
+                </p>
 
                 <strong>Detalles</strong>
                 {order.detalles?.length ? (
                   <ul className="order-detail-list">
                     {order.detalles.map((d) => (
                       <li key={d.id}>
-                        <span>{productName(d.producto)} × {d.cantidad} — S/. {Number(d.subtotal).toFixed(2)}</span>
+                        <span>
+                          {productName(d.producto)} × {d.cantidad} — S/. {Number(d.subtotal).toFixed(2)}
+                        </span>
                         {editing && (
                           <button
                             className="line-remove"
@@ -292,10 +292,19 @@ export default function OrdersPage() {
                 {editing && (
                   <div className="order-editor">
                     <div className="line-builder">
-                      <select value={editEstado} onChange={(e) => setEditEstado(e.target.value)}>
-                        {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      <select
+                        value={editEstado}
+                        onChange={(e) => setEditEstado(e.target.value as OrderStatus)}
+                      >
+                        {ESTADOS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
                       </select>
-                      <button onClick={() => saveEstado(order.id)} disabled={busy}>Guardar estado</button>
+                      <button onClick={() => saveEstado(order.id)} disabled={busy}>
+                        Guardar estado
+                      </button>
                     </div>
                     <div className="line-builder">
                       <select
@@ -304,7 +313,9 @@ export default function OrdersPage() {
                       >
                         <option value="">Agregar producto…</option>
                         {products.map((p) => (
-                          <option key={p.id} value={p.id}>{p.nombre} — S/. {p.precio}</option>
+                          <option key={p.id} value={p.id}>
+                            {p.nombre} — S/. {p.precio}
+                          </option>
                         ))}
                       </select>
                       <input
@@ -314,7 +325,9 @@ export default function OrdersPage() {
                         value={editLine.cantidad}
                         onChange={(e) => setEditLine({ ...editLine, cantidad: e.target.value })}
                       />
-                      <button onClick={() => addLineToOrder(order.id)} disabled={busy}>Añadir</button>
+                      <button onClick={() => addLineToOrder(order.id)} disabled={busy}>
+                        Añadir
+                      </button>
                     </div>
                   </div>
                 )}

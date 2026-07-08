@@ -1,68 +1,59 @@
-import { useEffect, useState } from 'react'
-import { addressesApi } from '../api/resources'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useAddresses,
+  useCreateAddress,
+  useDeleteAddress,
+} from '../hooks/useAddresses'
 
-const emptyForm = { usuario: '', calle: '', ciudad: '', provincia: '' }
+interface AddressForm {
+  usuario: string
+  calle: string
+  ciudad: string
+  provincia: string
+}
+
+const emptyForm: AddressForm = { usuario: '', calle: '', ciudad: '', provincia: '' }
 
 export default function AddressesPage() {
-  const [addresses, setAddresses] = useState([])
-  const [form, setForm] = useState(emptyForm)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { data: addresses = [], isLoading, isError } = useAddresses()
+  const createAddress = useCreateAddress()
+  const deleteAddress = useDeleteAddress()
 
-  async function load() {
-    setLoading(true)
-    try {
-      const data = await addressesApi.list()
-      setAddresses(data)
-      setError(null)
-    } catch (err) {
-      setError('No se pudo conectar con la API.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [form, setForm] = useState<AddressForm>(emptyForm)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  function handleChange(e) {
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setSaving(true)
     setError(null)
     setSuccess(null)
     try {
-      await addressesApi.create({ ...form, usuario: Number(form.usuario) })
+      await createAddress.mutateAsync({ ...form, usuario: Number(form.usuario) })
       setForm(emptyForm)
       setSuccess('Dirección creada.')
-      await load()
-    } catch (err) {
+    } catch {
       setError('Error al crear la dirección. Verifica el ID de usuario.')
-    } finally {
-      setSaving(false)
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: number) {
     if (!confirm('¿Eliminar esta dirección?')) return
-    await addressesApi.remove(id)
+    await deleteAddress.mutateAsync(id)
     setSuccess('Dirección eliminada.')
-    load()
   }
 
   return (
     <div>
       <h2>Direcciones</h2>
-      {error && <p className="error">{error}</p>}
+      {(isError || error) && <p className="error">{error ?? 'No se pudo conectar con la API.'}</p>}
       {success && <p className="success">{success}</p>}
       <p className="hint">
-        No hay endpoint de usuarios expuesto: usa el ID de un usuario existente (ver Django Admin en <code>/admin/</code>).
+        No hay endpoint de usuarios expuesto: usa el ID de un usuario existente (ver Django Admin en{' '}
+        <code>/admin/</code>).
       </p>
 
       <form className="card form" onSubmit={handleSubmit}>
@@ -72,18 +63,27 @@ export default function AddressesPage() {
         <input name="ciudad" placeholder="Ciudad" value={form.ciudad} onChange={handleChange} required />
         <input name="provincia" placeholder="Provincia" value={form.provincia} onChange={handleChange} required />
         <div className="actions">
-          <button type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Crear dirección'}</button>
+          <button type="submit" disabled={createAddress.isPending}>
+            {createAddress.isPending ? 'Guardando...' : 'Crear dirección'}
+          </button>
         </div>
       </form>
 
-      {loading ? (
+      {isLoading ? (
         <p>Cargando...</p>
       ) : addresses.length === 0 ? (
         <p className="hint">Aún no hay direcciones. Crea una con el formulario de arriba.</p>
       ) : (
         <table className="card">
           <thead>
-            <tr><th>ID</th><th>Usuario</th><th>Calle</th><th>Ciudad</th><th>Provincia</th><th></th></tr>
+            <tr>
+              <th>ID</th>
+              <th>Usuario</th>
+              <th>Calle</th>
+              <th>Ciudad</th>
+              <th>Provincia</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
             {addresses.map((a) => (
@@ -93,7 +93,9 @@ export default function AddressesPage() {
                 <td>{a.calle}</td>
                 <td>{a.ciudad}</td>
                 <td>{a.provincia}</td>
-                <td><button onClick={() => handleDelete(a.id)}>Eliminar</button></td>
+                <td>
+                  <button onClick={() => handleDelete(a.id)}>Eliminar</button>
+                </td>
               </tr>
             ))}
           </tbody>

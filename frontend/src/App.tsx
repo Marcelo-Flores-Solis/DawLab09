@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
 import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -7,6 +7,7 @@ import StoreLayout from './components/StoreLayout'
 import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import StorePage from './pages/StorePage'
+import ProductDetailPage from './pages/ProductDetailPage'
 import CartPage from './pages/CartPage'
 import MyOrdersPage from './pages/MyOrdersPage'
 import ProductsPage from './pages/ProductsPage'
@@ -25,6 +26,7 @@ export default function App() {
             {/* Tienda pública: cualquiera puede navegar y armar el carrito */}
             <Route element={<StoreLayout />}>
               <Route index element={<StorePage />} />
+              <Route path="producto/:id" element={<ProductDetailPage />} />
               <Route path="carrito" element={<CartPage />} />
               {/* Requiere sesión */}
               <Route element={<ProtectedRoute />}>
@@ -41,6 +43,9 @@ export default function App() {
                 <Route path="direcciones" element={<AddressesPage />} />
               </Route>
             </Route>
+
+            {/* Cualquier ruta desconocida redirige al catálogo (Requisito 3) */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </CartProvider>

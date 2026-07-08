@@ -5,7 +5,16 @@
 
 import { useState } from 'react'
 
-const EMOJI_BY_KEYWORD = [
+type ThumbSize = 'card' | 'mini' | 'detail'
+
+interface ProductThumbProps {
+  id?: number
+  categoryName?: string
+  imageUrl?: string | null
+  size?: ThumbSize
+}
+
+const EMOJI_BY_KEYWORD: [RegExp, string][] = [
   [/celul|phone|smart/i, '📱'],
   [/tecla|keyboard/i, '⌨️'],
   [/mouse|rat[oó]n/i, '🖱️'],
@@ -25,14 +34,19 @@ const GRADIENTS = [
   'linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%)',
 ]
 
-function emojiFor(categoryName = '') {
+function emojiFor(categoryName = ''): string {
   for (const [re, emoji] of EMOJI_BY_KEYWORD) {
     if (re.test(categoryName)) return emoji
   }
   return '🛍️'
 }
 
-export default function ProductThumb({ id = 0, categoryName = '', imageUrl = '', size = 'card' }) {
+export default function ProductThumb({
+  id = 0,
+  categoryName = '',
+  imageUrl = '',
+  size = 'card',
+}: ProductThumbProps) {
   const [failed, setFailed] = useState(false)
   const showImage = imageUrl && !failed
 

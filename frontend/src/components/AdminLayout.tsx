@@ -38,8 +38,12 @@ export default function AdminLayout() {
         </nav>
         <div className="admin-topbar-right">
           <span className="admin-user">{username}</span>
-          <Link to="/" className="ghost-btn">Ver tienda</Link>
-          <button className="ghost-btn" onClick={handleLogout}>Salir</button>
+          <Link to="/" className="ghost-btn">
+            Ver tienda
+          </Link>
+          <button className="ghost-btn" onClick={handleLogout}>
+            Salir
+          </button>
         </div>
       </header>
       <main className="admin-content">

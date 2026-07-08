@@ -1,13 +1,12 @@
-import { createContext, useContext, useState, useCallback } from 'react'
-
-const ToastContext = createContext(null)
+import { useState, useCallback, type ReactNode } from 'react'
+import { ToastContext, type Toast, type ToastType } from './toast-context'
 
 let idSeq = 0
 
-export function ToastProvider({ children }) {
-  const [toasts, setToasts] = useState([])
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([])
 
-  const notify = useCallback((message, type = 'success') => {
+  const notify = useCallback((message: string, type: ToastType = 'success') => {
     const id = ++idSeq
     setToasts((prev) => [...prev, { id, message, type }])
     setTimeout(() => {
@@ -27,10 +26,4 @@ export function ToastProvider({ children }) {
       </div>
     </ToastContext.Provider>
   )
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast debe usarse dentro de <ToastProvider>')
-  return ctx
 }
