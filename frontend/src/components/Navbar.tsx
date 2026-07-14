@@ -36,8 +36,8 @@ export default function Navbar() {
           </NavLink>
         )}
         {authed && (
-          <NavLink to="/mis-direcciones" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Mis direcciones
+          <NavLink to="/mi-perfil" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Mi perfil
           </NavLink>
         )}
         {staff && (

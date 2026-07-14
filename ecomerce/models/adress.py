@@ -18,10 +18,8 @@ class Address(models.Model):
         # de datos: sólo se renombró la clase de Python (Adress -> Address).
         db_table = 'ecomerce_adress'
 
-    def save(self, *args, **kwargs):
-        self.ciudad = self.ciudad.title()
-        self.provincia = self.provincia.title()
-        super().save(*args, **kwargs)
+    # No normalizamos ciudad/provincia: ahora llegan como valores canónicos de
+    # un desplegable validado (departamentos y provincias reales del Perú).
 
     def __str__(self):
         return f"{self.usuario.username} - {self.ciudad}"

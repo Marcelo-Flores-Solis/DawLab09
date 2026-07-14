@@ -4,6 +4,7 @@ from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ from .serializers import (
     OrderSerializer,
     OrderDetailSerializer,
     AddressSerializer,
+    ProfileSerializer,
 )
 from .serializers.checkoutSerializer import CheckoutSerializer
 from .serializers.tokenSerializer import CustomTokenObtainPairSerializer
@@ -23,6 +25,21 @@ from .serializers.tokenSerializer import CustomTokenObtainPairSerializer
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class ProfileView(RetrieveUpdateAPIView):
+    """Perfil del usuario autenticado (GET / PUT / PATCH sobre /api/profile/).
+
+    Siempre opera sobre el perfil del usuario del token; si aún no existe, se
+    crea vacío al primer acceso.
+    """
+
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        return profile
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -138,6 +155,30 @@ class OrderViewSet(viewsets.ModelViewSet):
             faltantes = [pid for pid in cantidades if pid not in productos]
             if faltantes:
                 raise ValidationError(f'Producto(s) inexistente(s): {faltantes}')
+
+            # Aviso de precio desactualizado: si el cliente muestra un precio
+            # distinto al actual, abortamos (409) para que revise y confirme el
+            # precio nuevo. Nunca le cobramos de más sin avisar.
+            cambios = []
+            for item in items:
+                esperado = item.get('precio_unitario')
+                producto = productos[item['producto']]
+                if esperado is not None and esperado != producto.precio:
+                    cambios.append({
+                        'producto': producto.id,
+                        'nombre': producto.nombre,
+                        'precio_anterior': str(esperado),
+                        'precio_actual': str(producto.precio),
+                    })
+            if cambios:
+                return Response(
+                    {
+                        'detail': 'Los precios de algunos productos cambiaron. '
+                                  'Revisa tu carrito y confirma de nuevo.',
+                        'precios_actualizados': cambios,
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
 
             for pid, cantidad in cantidades.items():
                 producto = productos[pid]

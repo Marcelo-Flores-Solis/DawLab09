@@ -47,6 +47,17 @@ export interface Address {
   provincia: string
 }
 
+// Datos personales del usuario (endpoint /profile/). dni y fecha pueden venir
+// nulos mientras el perfil no se complete.
+export interface Profile {
+  dni: string | null
+  nombres: string
+  apellidos: string
+  telefono: string
+  correo: string
+  fecha_nacimiento: string | null
+}
+
 // Ítem del carrito local (persistido en localStorage, no viene del backend).
 export interface CartItem {
   id: number

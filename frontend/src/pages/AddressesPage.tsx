@@ -4,6 +4,7 @@ import {
   useCreateAddress,
   useDeleteAddress,
 } from '../hooks/useAddresses'
+import AddressLocationFields from '../components/AddressLocationFields'
 
 interface AddressForm {
   usuario: string
@@ -60,8 +61,13 @@ export default function AddressesPage() {
         <h3>Nueva dirección</h3>
         <input name="usuario" type="number" min="1" placeholder="ID de usuario" value={form.usuario} onChange={handleChange} required />
         <input name="calle" placeholder="Calle" value={form.calle} onChange={handleChange} required />
-        <input name="ciudad" placeholder="Ciudad" value={form.ciudad} onChange={handleChange} required />
-        <input name="provincia" placeholder="Provincia" value={form.provincia} onChange={handleChange} required />
+        <AddressLocationFields
+          departamento={form.provincia}
+          provincia={form.ciudad}
+          onChange={({ departamento, provincia }) =>
+            setForm({ ...form, provincia: departamento, ciudad: provincia })
+          }
+        />
         <div className="actions">
           <button type="submit" disabled={createAddress.isPending}>
             {createAddress.isPending ? 'Guardando...' : 'Crear dirección'}

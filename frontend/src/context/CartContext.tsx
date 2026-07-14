@@ -57,11 +57,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clear = useCallback(() => setItems([]), [])
 
+  // Reconcilia el carrito con los datos actuales del backend: actualiza precio y
+  // stock, recorta la cantidad al stock disponible y descarta productos que ya
+  // no existen o quedaron sin stock. Evita comprar con precios desactualizados.
+  const syncWith = useCallback((products: Product[]) => {
+    const byId = new Map(products.map((p) => [p.id, p]))
+    setItems((prev) =>
+      prev
+        .map((it) => {
+          const p = byId.get(it.id)
+          if (!p) return null
+          return {
+            ...it,
+            nombre: p.nombre,
+            precio: p.precio,
+            stock: p.stock,
+            categoria: p.categoria,
+            imagen: p.imagen,
+            cantidad: Math.min(it.cantidad, p.stock),
+          }
+        })
+        .filter((it): it is CartItem => it !== null && it.cantidad > 0)
+    )
+  }, [])
+
   const count = items.reduce((n, p) => n + p.cantidad, 0)
   const total = items.reduce((sum, p) => sum + Number(p.precio) * p.cantidad, 0)
 
   return (
-    <CartContext.Provider value={{ items, addItem, setQty, removeItem, clear, count, total }}>
+    <CartContext.Provider
+      value={{ items, addItem, setQty, removeItem, clear, syncWith, count, total }}
+    >
       {children}
     </CartContext.Provider>
   )

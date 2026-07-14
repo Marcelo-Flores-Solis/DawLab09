@@ -1,32 +1,96 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCart } from '../hooks/useCart'
 import { useToast } from '../hooks/useToast'
 import { isAuthenticated } from '../api/auth'
 import { useCheckout } from '../hooks/useCheckout'
+import { useProducts } from '../hooks/useProducts'
 import { useAddresses, useCreateAddress } from '../hooks/useAddresses'
+import { useProfile, useUpdateProfile } from '../hooks/useProfile'
 import ProductThumb from '../components/ProductThumb'
+import AddressLocationFields from '../components/AddressLocationFields'
+import PersonalDataFields from '../components/PersonalDataFields'
+import {
+  emptyPersonalData,
+  personalDataErrors,
+  type PersonalDataForm,
+} from '../lib/personalData'
+import type { Product, Profile } from '../types'
+
+function contactFromProfile(p?: Profile): PersonalDataForm {
+  if (!p) return emptyPersonalData
+  return {
+    dni: p.dni ?? '',
+    nombres: p.nombres ?? '',
+    apellidos: p.apellidos ?? '',
+    telefono: p.telefono ?? '',
+    correo: p.correo ?? '',
+    fecha_nacimiento: p.fecha_nacimiento ?? '',
+  }
+}
 
 const emptyAddress = { calle: '', ciudad: '', provincia: '' }
 
 export default function CartPage() {
-  const { items, setQty, removeItem, clear, total } = useCart()
+  const { items, setQty, removeItem, clear, total, syncWith } = useCart()
   const { notify } = useToast()
   const navigate = useNavigate()
   const { mutate: checkout, isPending: placing } = useCheckout()
 
   const authed = isAuthenticated()
+  const { data: products = [], refetch: refetchProducts } = useProducts()
   const { data: addresses = [] } = useAddresses()
   const createAddress = useCreateAddress()
+  const { data: profile } = useProfile()
+  const updateProfile = useUpdateProfile()
 
   const [selected, setSelected] = useState<number | null>(null)
   const [showNew, setShowNew] = useState(false)
   const [newAddr, setNewAddr] = useState(emptyAddress)
+  const [contact, setContact] = useState<PersonalDataForm>(emptyPersonalData)
+  const [contactLoaded, setContactLoaded] = useState(false)
 
   // Preselecciona la primera dirección guardada cuando cargan.
   useEffect(() => {
     if (selected == null && addresses.length > 0) setSelected(addresses[0].id)
   }, [addresses, selected])
+
+  // Autocompleta los datos de contacto desde el perfil (una vez cargado).
+  useEffect(() => {
+    if (!contactLoaded && profile) {
+      setContact(contactFromProfile(profile))
+      setContactLoaded(true)
+    }
+  }, [profile, contactLoaded])
+
+  function fillFromProfile() {
+    setContact(contactFromProfile(profile))
+    notify('Datos traídos de tu perfil')
+  }
+
+  // Detecta líneas con precio/stock desactualizado respecto al backend, o
+  // productos que ya no existen. Mientras las haya, bloqueamos la compra.
+  const productById = useMemo(() => {
+    const map = new Map<number, Product>()
+    products.forEach((p) => map.set(p.id, p))
+    return map
+  }, [products])
+
+  const staleItems = useMemo(
+    () =>
+      items.filter((it) => {
+        const p = productById.get(it.id)
+        if (!p) return true // el producto ya no existe
+        return p.precio !== it.precio || p.stock < it.cantidad
+      }),
+    [items, productById]
+  )
+  const hasStale = products.length > 0 && staleItems.length > 0
+
+  function handleSync() {
+    syncWith(products)
+    notify('Actualizamos precios y stock de tu carrito')
+  }
 
   async function handleAddAddress(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -41,7 +105,7 @@ export default function CartPage() {
     }
   }
 
-  function handleCheckout() {
+  async function handleCheckout() {
     // Gate de compra: navegar es libre, pero para confirmar el pedido
     // hace falta iniciar sesión. Volvemos al carrito tras autenticarse.
     if (!authed) {
@@ -49,8 +113,30 @@ export default function CartPage() {
       navigate('/login', { state: { from: '/carrito' } })
       return
     }
+    if (hasStale) {
+      notify('Tu carrito tiene precios desactualizados. Actualízalo antes de comprar.', 'error')
+      return
+    }
+    const contactErr = personalDataErrors(contact, { require: true })
+    if (contactErr) {
+      notify(contactErr, 'error')
+      return
+    }
     if (selected == null) {
       notify('Elige o añade una dirección de envío', 'error')
+      return
+    }
+    // Guardamos (y revalidamos en el servidor) los datos de contacto en el
+    // perfil antes de crear el pedido.
+    try {
+      await updateProfile.mutateAsync({
+        dni: contact.dni,
+        nombres: contact.nombres,
+        apellidos: contact.apellidos,
+        telefono: contact.telefono,
+      })
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Revisa tus datos de contacto', 'error')
       return
     }
     checkout(
@@ -61,14 +147,17 @@ export default function CartPage() {
           notify(`Pedido #${order.id} realizado con éxito`)
           navigate('/mis-pedidos')
         },
-        // El backend devuelve el motivo (p. ej. stock insuficiente); lo mostramos.
-        onError: (err) =>
+        // Ante un error (p. ej. precio cambiado 409 o stock insuficiente),
+        // refrescamos los productos para que el aviso del carrito se actualice.
+        onError: (err) => {
+          void refetchProducts()
           notify(
             err instanceof Error
               ? err.message
               : 'Ocurrió un error al procesar tu pedido. Inténtalo de nuevo.',
             'error'
-          ),
+          )
+        },
       }
     )
   }
@@ -86,9 +175,10 @@ export default function CartPage() {
     )
   }
 
-  // Con sesión iniciada exigimos una dirección de envío (guardada o nueva).
   const needsAddress = authed && selected == null
   const showNewForm = authed && (showNew || addresses.length === 0)
+  const contactBad = authed && personalDataErrors(contact, { require: true }) !== null
+  const busy = placing || updateProfile.isPending
 
   return (
     <div className="cart-page">
@@ -96,37 +186,61 @@ export default function CartPage() {
 
       <div className="cart-layout">
         <div className="cart-items">
-          {items.map((item) => (
-            <div className="cart-item" key={item.id}>
-              <ProductThumb id={item.id} size="mini" imageUrl={item.imagen} />
-              <div className="cart-item-info">
-                <h3>{item.nombre}</h3>
-                <span className="product-price">S/ {Number(item.precio).toFixed(2)}</span>
+          {hasStale && (
+            <div className="cart-warning">
+              <div>
+                <strong>Algunos productos cambiaron</strong>
+                <p className="muted">
+                  El precio o el stock se actualizaron desde que los agregaste. Revisa tu
+                  carrito antes de confirmar.
+                </p>
               </div>
-
-              <div className="qty-stepper">
-                <button onClick={() => setQty(item.id, item.cantidad - 1)} aria-label="Restar">
-                  −
-                </button>
-                <span>{item.cantidad}</span>
-                <button onClick={() => setQty(item.id, item.cantidad + 1)} aria-label="Sumar">
-                  +
-                </button>
-              </div>
-
-              <span className="cart-item-subtotal">
-                S/ {(Number(item.precio) * item.cantidad).toFixed(2)}
-              </span>
-
-              <button
-                className="remove-btn"
-                onClick={() => removeItem(item.id)}
-                aria-label="Quitar"
-              >
-                ✕
+              <button className="add-btn" onClick={handleSync}>
+                Actualizar carrito
               </button>
             </div>
-          ))}
+          )}
+
+          {items.map((item) => {
+            const current = productById.get(item.id)
+            const priceChanged = current != null && current.precio !== item.precio
+            return (
+              <div className="cart-item" key={item.id}>
+                <ProductThumb id={item.id} size="mini" imageUrl={item.imagen} />
+                <div className="cart-item-info">
+                  <h3>{item.nombre}</h3>
+                  <span className="product-price">
+                    S/ {Number(item.precio).toFixed(2)}
+                    {priceChanged && (
+                      <span className="price-changed"> → S/ {Number(current!.precio).toFixed(2)}</span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="qty-stepper">
+                  <button onClick={() => setQty(item.id, item.cantidad - 1)} aria-label="Restar">
+                    −
+                  </button>
+                  <span>{item.cantidad}</span>
+                  <button onClick={() => setQty(item.id, item.cantidad + 1)} aria-label="Sumar">
+                    +
+                  </button>
+                </div>
+
+                <span className="cart-item-subtotal">
+                  S/ {(Number(item.precio) * item.cantidad).toFixed(2)}
+                </span>
+
+                <button
+                  className="remove-btn"
+                  onClick={() => removeItem(item.id)}
+                  aria-label="Quitar"
+                >
+                  ✕
+                </button>
+              </div>
+            )
+          })}
         </div>
 
         <aside className="cart-summary">
@@ -143,6 +257,25 @@ export default function CartPage() {
             <span>Total</span>
             <span>S/ {total.toFixed(2)}</span>
           </div>
+
+          {authed && (
+            <div className="checkout-contact">
+              <div className="checkout-contact-head">
+                <h3>Datos de contacto</h3>
+                {profile && (profile.dni || profile.nombres) && (
+                  <button type="button" className="link-btn" onClick={fillFromProfile}>
+                    Traer de mi perfil
+                  </button>
+                )}
+              </div>
+              <div className="form contact-fields">
+                <PersonalDataFields
+                  value={contact}
+                  onChange={(patch) => setContact({ ...contact, ...patch })}
+                />
+              </div>
+            </div>
+          )}
 
           {authed && (
             <div className="checkout-address">
@@ -184,17 +317,12 @@ export default function CartPage() {
                     onChange={(e) => setNewAddr({ ...newAddr, calle: e.target.value })}
                     required
                   />
-                  <input
-                    placeholder="Ciudad"
-                    value={newAddr.ciudad}
-                    onChange={(e) => setNewAddr({ ...newAddr, ciudad: e.target.value })}
-                    required
-                  />
-                  <input
-                    placeholder="Provincia"
-                    value={newAddr.provincia}
-                    onChange={(e) => setNewAddr({ ...newAddr, provincia: e.target.value })}
-                    required
+                  <AddressLocationFields
+                    departamento={newAddr.provincia}
+                    provincia={newAddr.ciudad}
+                    onChange={({ departamento, provincia }) =>
+                      setNewAddr({ ...newAddr, provincia: departamento, ciudad: provincia })
+                    }
                   />
                   <div className="inline-actions">
                     <button type="submit" className="add-btn" disabled={createAddress.isPending}>
@@ -214,15 +342,19 @@ export default function CartPage() {
           <button
             className="add-btn checkout-btn"
             onClick={handleCheckout}
-            disabled={placing || needsAddress}
+            disabled={busy || hasStale || contactBad || needsAddress}
           >
-            {placing
+            {busy
               ? 'Procesando…'
               : !authed
                 ? 'Iniciar sesión para comprar'
-                : needsAddress
-                  ? 'Añade una dirección'
-                  : 'Confirmar pedido'}
+                : hasStale
+                  ? 'Actualiza tu carrito'
+                  : contactBad
+                    ? 'Completa tus datos'
+                    : needsAddress
+                      ? 'Añade una dirección'
+                      : 'Confirmar pedido'}
           </button>
           <Link to="/" className="continue-link">
             ← Seguir comprando

@@ -784,7 +784,8 @@ button {
   gap: 12px;
 }
 
-.form input {
+.form input,
+.form select {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -797,10 +798,15 @@ button {
   color: #9ca3af;
 }
 
-.form input:focus {
+.form input:focus,
+.form select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.form select:disabled {
+  opacity: 0.6;
 }
 
 .form .add-btn {
@@ -1004,4 +1010,81 @@ button {
 
 .link-btn:hover {
   text-decoration: underline;
+}
+
+/* ---------- Aviso de carrito desactualizado ---------- */
+.cart-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.cart-warning p {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.cart-warning .add-btn {
+  white-space: nowrap;
+}
+
+.price-changed {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ---------- Perfil ---------- */
+.profile-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 22px;
+  max-width: 620px;
+}
+
+.profile-section h2 {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.profile-form {
+  margin-top: 14px;
+}
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+/* ---------- Datos de contacto en el checkout ---------- */
+.checkout-contact {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.checkout-contact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.checkout-contact-head h3 {
+  font-size: 15px;
+}
+
+.contact-fields {
+  gap: 8px;
 }

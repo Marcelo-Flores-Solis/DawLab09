@@ -16,7 +16,13 @@ export async function placeOrder(
   direccion?: number | null
 ): Promise<Order> {
   return http.post<Order>('/orders/checkout/', {
-    items: items.map((item) => ({ producto: item.id, cantidad: item.cantidad })),
+    // `precio_unitario` es el precio que el cliente tiene a la vista: el servidor
+    // lo compara con el actual y avisa (409) si cambió. Nunca fija el importe.
+    items: items.map((item) => ({
+      producto: item.id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio,
+    })),
     ...(direccion != null ? { direccion } : {}),
   })
 }

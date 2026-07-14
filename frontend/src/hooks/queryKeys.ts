@@ -5,4 +5,5 @@ export const queryKeys = {
   categories: ['categories'] as const,
   orders: ['orders'] as const,
   addresses: ['addresses'] as const,
+  profile: ['profile'] as const,
 }

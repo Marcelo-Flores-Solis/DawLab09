@@ -2,12 +2,18 @@ from rest_framework import serializers
 
 
 class CheckoutItemSerializer(serializers.Serializer):
-    """Una línea del carrito tal como la envía el frontend: sólo el id del
-    producto y la cantidad. El precio NO se acepta del cliente (se toma del
-    producto en el servidor)."""
+    """Una línea del carrito tal como la envía el frontend: el id del producto,
+    la cantidad y, opcionalmente, el precio que el cliente tiene a la vista.
+
+    El precio real SIEMPRE se toma del producto en el servidor; `precio_unitario`
+    sólo se usa para detectar carritos desactualizados y avisar antes de cobrar
+    (nunca para fijar el importe)."""
 
     producto = serializers.IntegerField(min_value=1)
     cantidad = serializers.IntegerField(min_value=1)
+    precio_unitario = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False,
+    )
 
 
 class CheckoutSerializer(serializers.Serializer):

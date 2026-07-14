@@ -3,3 +3,4 @@ from .product import Product
 from .order import Order
 from .orderDetail import OrderDetail
 from .adress import Address
+from .profile import Profile

@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
-from ecomerce.models import Category, Product, Order, OrderDetail, Address
+from ecomerce.models import Category, Product, Order, OrderDetail, Address, Profile
 
 
 class ModelTests(APITestCase):
@@ -23,12 +23,6 @@ class ModelTests(APITestCase):
 
     def test_product_nombre_titlecase(self):
         self.assertEqual(self.product.nombre, 'Macbook Air M3')
-
-    def test_address_ciudad_provincia_titlecase(self):
-        user = User.objects.create_user('u', password='p')
-        addr = Address.objects.create(usuario=user, calle='a', ciudad='lima', provincia='lima')
-        self.assertEqual(addr.ciudad, 'Lima')
-        self.assertEqual(addr.provincia, 'Lima')
 
     def test_address_uses_original_table(self):
         # El rename Adress->Address mantuvo la tabla física.
@@ -100,9 +94,9 @@ class CheckoutTests(APITestCase):
 
     def test_price_is_taken_from_server_not_client(self):
         self.client.force_authenticate(self.user)
-        # El cliente intenta falsear precio/subtotal: deben ignorarse.
+        # Sin enviar precio, el servidor fija el del producto (no uno del cliente).
         res = self.client.post(self.URL, {'items': [
-            {'producto': self.product.id, 'cantidad': 1, 'precio_unitario': '1', 'subtotal': '1'},
+            {'producto': self.product.id, 'cantidad': 1},
         ]}, format='json')
         self.assertEqual(res.status_code, 201)
         det = Order.objects.get().detalles.get()
@@ -164,6 +158,26 @@ class CheckoutTests(APITestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 10)        # ni se tocó el stock
 
+    def test_stale_price_is_flagged_and_order_not_created(self):
+        self.client.force_authenticate(self.user)
+        # El carrito muestra 90 pero el precio real es 100 -> 409, sin crear pedido.
+        res = self.client.post(self.URL, {'items': [
+            {'producto': self.product.id, 'cantidad': 1, 'precio_unitario': '90.00'},
+        ]}, format='json')
+        self.assertEqual(res.status_code, 409)
+        self.assertIn('precios_actualizados', res.data)
+        self.assertEqual(Order.objects.count(), 0)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 10)
+
+    def test_matching_price_succeeds(self):
+        self.client.force_authenticate(self.user)
+        res = self.client.post(self.URL, {'items': [
+            {'producto': self.product.id, 'cantidad': 1, 'precio_unitario': '100.00'},
+        ]}, format='json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(Order.objects.get().total, Decimal('100.00'))
+
 
 class AddressTests(APITestCase):
     """Autogestión de direcciones del cliente (sin panel admin)."""
@@ -174,9 +188,12 @@ class AddressTests(APITestCase):
         self.user = User.objects.create_user('cliente', password='p')
         self.other = User.objects.create_user('otro', password='p')
 
+    # La columna 'provincia' guarda el departamento y 'ciudad' la provincia.
+    VALID = {'calle': 'Av 1', 'provincia': 'Arequipa', 'ciudad': 'Camaná'}
+
     def test_customer_creates_address_without_sending_usuario(self):
         self.client.force_authenticate(self.user)
-        res = self.client.post(self.URL, {'calle': 'Av 1', 'ciudad': 'lima', 'provincia': 'lima'}, format='json')
+        res = self.client.post(self.URL, self.VALID, format='json')
         self.assertEqual(res.status_code, 201)
         addr = Address.objects.get()
         self.assertEqual(addr.usuario, self.user)   # usuario tomado del token
@@ -184,11 +201,22 @@ class AddressTests(APITestCase):
     def test_customer_cannot_forge_owner(self):
         self.client.force_authenticate(self.user)
         # Aunque envíe el id de otro usuario, se ignora: la dirección es suya.
-        res = self.client.post(self.URL, {
-            'usuario': self.other.id, 'calle': 'x', 'ciudad': 'lima', 'provincia': 'lima',
-        }, format='json')
+        res = self.client.post(self.URL, {**self.VALID, 'usuario': self.other.id}, format='json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(Address.objects.get().usuario, self.user)
+
+    def test_rejects_invalid_department(self):
+        self.client.force_authenticate(self.user)
+        res = self.client.post(self.URL, {**self.VALID, 'provincia': 'Narnia'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(Address.objects.count(), 0)
+
+    def test_rejects_province_not_in_department(self):
+        self.client.force_authenticate(self.user)
+        # 'Camaná' es de Arequipa, no de Lima -> combinación inválida.
+        res = self.client.post(self.URL, {**self.VALID, 'provincia': 'Lima'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(Address.objects.count(), 0)
 
     def test_list_is_scoped_to_owner(self):
         mine = Address.objects.create(usuario=self.user, calle='a', ciudad='lima', provincia='lima')
@@ -243,6 +271,66 @@ class PermissionTests(APITestCase):
         res = self.client.get('/api/orders/')
         ids = [o['id'] for o in res.data['results']]
         self.assertEqual(ids, [mine.id])
+
+
+class ProfileTests(APITestCase):
+    """Perfil del usuario: /api/profile/ (datos personales con validaciones)."""
+
+    URL = '/api/profile/'
+
+    def setUp(self):
+        self.user = User.objects.create_user('cliente', password='p')
+        self.other = User.objects.create_user('otro', password='p')
+
+    def test_requires_authentication(self):
+        self.assertEqual(self.client.get(self.URL).status_code, 401)
+
+    def test_get_creates_empty_profile(self):
+        self.client.force_authenticate(self.user)
+        res = self.client.get(self.URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(Profile.objects.filter(user=self.user).exists())
+        self.assertIsNone(res.data['dni'])
+
+    def test_update_valid_profile(self):
+        self.client.force_authenticate(self.user)
+        res = self.client.patch(self.URL, {
+            'dni': '12345678', 'nombres': 'Ana', 'apellidos': 'Pérez',
+            'telefono': '987654321', 'correo': 'ana@example.com',
+        }, format='json')
+        self.assertEqual(res.status_code, 200)
+        p = Profile.objects.get(user=self.user)
+        self.assertEqual(p.dni, '12345678')
+        self.assertEqual(p.telefono, '987654321')
+
+    def test_dni_must_have_8_digits(self):
+        self.client.force_authenticate(self.user)
+        for bad in ['123456', '1234567a', '123456789']:
+            res = self.client.patch(self.URL, {'dni': bad}, format='json')
+            self.assertEqual(res.status_code, 400, bad)
+
+    def test_telefono_must_have_9_digits(self):
+        self.client.force_authenticate(self.user)
+        res = self.client.patch(self.URL, {'telefono': '12345'}, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_invalid_email_rejected(self):
+        self.client.force_authenticate(self.user)
+        res = self.client.patch(self.URL, {'correo': 'no-es-correo'}, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_dni_is_unique_across_users(self):
+        Profile.objects.update_or_create(user=self.other, defaults={'dni': '12345678'})
+        self.client.force_authenticate(self.user)
+        res = self.client.patch(self.URL, {'dni': '12345678'}, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_only_touches_own_profile(self):
+        # Aunque exista el perfil de otro, cada quien edita el suyo.
+        self.client.force_authenticate(self.user)
+        self.client.patch(self.URL, {'nombres': 'Yo'}, format='json')
+        self.assertEqual(Profile.objects.get(user=self.user).nombres, 'Yo')
+        self.assertFalse(Profile.objects.filter(user=self.other).exists())
 
 
 class PaginationTests(APITestCase):

@@ -7,6 +7,7 @@ export interface CartContextValue {
   setQty: (id: number, cantidad: number) => void
   removeItem: (id: number) => void
   clear: () => void
+  syncWith: (products: Product[]) => void
   count: number
   total: number
 }
