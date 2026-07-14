@@ -36,8 +36,27 @@ export function getUsername(): string | null {
   return localStorage.getItem('username')
 }
 
+// ¿El JWT ya expiró? Lee el claim `exp` (segundos epoch). Sin token o ilegible
+// se considera expirado.
+function isJwtExpired(token: string | null): boolean {
+  if (!token) return true
+  try {
+    const payload = token.split('.')[1]
+    const { exp } = JSON.parse(
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    ) as { exp?: number }
+    if (!exp) return false // sin exp no podemos afirmar que expiró
+    return exp * 1000 <= Date.now()
+  } catch {
+    return true
+  }
+}
+
 export function isAuthenticated(): boolean {
-  return Boolean(getAccessToken())
+  // Hay sesión si el access token sigue vigente, o si el refresh token todavía
+  // permite renovarlo. Un token totalmente expirado ya no cuenta como sesión,
+  // así evitamos mostrar rutas protegidas que fallarían en la siguiente llamada.
+  return !isJwtExpired(getAccessToken()) || !isJwtExpired(getRefreshToken())
 }
 
 // Decodifica el payload del JWT sin verificar la firma (sólo para leer claims

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import sys
 from pathlib import Path
 from decouple import config
 
@@ -93,6 +94,15 @@ DATABASES = {
     }
 }
 
+# Durante los tests usamos SQLite en memoria: es rápido y no toca la BD real
+# (Supabase, que además no permite crear la base de datos de test que Django
+# necesitaría en PostgreSQL).
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -102,6 +112,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    # Paginación por defecto en todos los listados (envoltura count/next/results).
+    'DEFAULT_PAGINATION_CLASS': 'ecomerce.pagination.DefaultPagination',
+    'PAGE_SIZE': 12,
 }
 
 # En local: localhost:5173. En prod: tu dominio de Vercel (por variable de entorno).

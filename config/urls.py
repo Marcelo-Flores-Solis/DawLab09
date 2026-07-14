@@ -25,7 +25,7 @@ from ecomerce.views import (
     ProductViewSet,
     OrderViewSet,
     OrderDetailViewSet,
-    AdressViewSet,
+    AddressViewSet,
     CustomTokenObtainPairView,
 )
 
@@ -34,7 +34,9 @@ router.register(r'categorys', CategoryViewSet)
 router.register(r'products', ProductViewSet)
 router.register(r'orders', OrderViewSet)
 router.register(r'order-details', OrderDetailViewSet)
-router.register(r'adresses', AdressViewSet)
+# La ruta se mantiene como 'adresses' para no romper el frontend ya desplegado;
+# sólo se renombró la clase de Python a AddressViewSet.
+router.register(r'adresses', AddressViewSet)
 
 urlpatterns = [
     path('api/', include(router.urls)),

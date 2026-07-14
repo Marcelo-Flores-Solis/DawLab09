@@ -35,6 +35,11 @@ export default function Navbar() {
             Mis pedidos
           </NavLink>
         )}
+        {authed && (
+          <NavLink to="/mis-direcciones" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Mis direcciones
+          </NavLink>
+        )}
         {staff && (
           <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>
             Panel admin

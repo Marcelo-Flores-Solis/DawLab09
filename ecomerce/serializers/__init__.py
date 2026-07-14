@@ -2,4 +2,4 @@ from .productSerializer import ProductSerializer
 from .orderSerializer import OrderSerializer
 from .order_detailSerializer import OrderDetailSerializer
 from .categorySerializer import CategorySerializer
-from .adressSerializer import AdressSerializer
+from .adressSerializer import AddressSerializer

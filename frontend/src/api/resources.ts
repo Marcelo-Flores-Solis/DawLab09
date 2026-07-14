@@ -1,12 +1,33 @@
 import { http } from './client'
-import type { Product, Category, Order, OrderDetail, Address } from '../types'
+import type { Product, Category, Order, OrderDetail, Address, Paginated } from '../types'
+
+const BASE_URL = import.meta.env.VITE_API_URL
+
+// La API está paginada (DRF devuelve { count, next, results }). Este helper
+// recorre las páginas de forma transparente y devuelve la lista completa, para
+// que las vistas (catálogo con filtro en cliente, tablas de admin) sigan
+// recibiendo un arreglo como antes.
+async function listAll<T>(resource: string): Promise<T[]> {
+  const first = await http.get<Paginated<T> | T[]>(`/${resource}/?page_size=100`)
+  if (Array.isArray(first)) return first // por si la paginación estuviera desactivada
+
+  const results = [...first.results]
+  let next = first.next
+  while (next) {
+    // `next` es una URL absoluta; la convertimos en ruta relativa a la base.
+    const page = await http.get<Paginated<T>>(next.replace(BASE_URL, ''))
+    results.push(...page.results)
+    next = page.next
+  }
+  return results
+}
 
 // Fábrica genérica y tipada de servicios CRUD sobre `fetch`.
 //   T       -> tipo de la entidad que devuelve el backend
 //   Payload -> forma del cuerpo aceptado al crear/editar
 function crudFor<T, Payload>(resource: string) {
   return {
-    list: () => http.get<T[]>(`/${resource}/`),
+    list: () => listAll<T>(resource),
     get: (id: number) => http.get<T>(`/${resource}/${id}/`),
     create: (data: Payload) => http.post<T>(`/${resource}/`, data),
     update: (id: number, data: Payload) => http.put<T>(`/${resource}/${id}/`, data),
@@ -42,7 +63,9 @@ export interface OrderDetailPayload {
 }
 
 export interface AddressPayload {
-  usuario: number
+  // El cliente no envía `usuario` (el backend lo toma del token). El panel de
+  // administración sí puede indicarlo para crear a nombre de otro usuario.
+  usuario?: number
   calle: string
   ciudad: string
   provincia: string

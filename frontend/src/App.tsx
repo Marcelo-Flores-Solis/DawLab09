@@ -10,6 +10,7 @@ import StorePage from './pages/StorePage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CartPage from './pages/CartPage'
 import MyOrdersPage from './pages/MyOrdersPage'
+import MyAddressesPage from './pages/MyAddressesPage'
 import ProductsPage from './pages/ProductsPage'
 import CategoriesPage from './pages/CategoriesPage'
 import OrdersPage from './pages/OrdersPage'
@@ -31,6 +32,7 @@ export default function App() {
               {/* Requiere sesión */}
               <Route element={<ProtectedRoute />}>
                 <Route path="mis-pedidos" element={<MyOrdersPage />} />
+                <Route path="mis-direcciones" element={<MyAddressesPage />} />
               </Route>
             </Route>
 

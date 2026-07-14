@@ -2,8 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productsApi, type ProductPayload } from '../api/resources'
 import { queryKeys } from './queryKeys'
 
-// Requisito 4: las peticiones al backend se manejan con TanStack Query dentro
-// de custom hooks. Aquí, todo lo relativo a productos.
+
 
 export function useProducts() {
   return useQuery({

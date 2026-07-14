@@ -1,9 +1,13 @@
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCart } from '../hooks/useCart'
 import { useToast } from '../hooks/useToast'
-import { getUserId, isAuthenticated } from '../api/auth'
+import { isAuthenticated } from '../api/auth'
 import { useCheckout } from '../hooks/useCheckout'
+import { useAddresses, useCreateAddress } from '../hooks/useAddresses'
 import ProductThumb from '../components/ProductThumb'
+
+const emptyAddress = { calle: '', ciudad: '', provincia: '' }
 
 export default function CartPage() {
   const { items, setQty, removeItem, clear, total } = useCart()
@@ -11,29 +15,60 @@ export default function CartPage() {
   const navigate = useNavigate()
   const { mutate: checkout, isPending: placing } = useCheckout()
 
+  const authed = isAuthenticated()
+  const { data: addresses = [] } = useAddresses()
+  const createAddress = useCreateAddress()
+
+  const [selected, setSelected] = useState<number | null>(null)
+  const [showNew, setShowNew] = useState(false)
+  const [newAddr, setNewAddr] = useState(emptyAddress)
+
+  // Preselecciona la primera dirección guardada cuando cargan.
+  useEffect(() => {
+    if (selected == null && addresses.length > 0) setSelected(addresses[0].id)
+  }, [addresses, selected])
+
+  async function handleAddAddress(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    try {
+      const created = await createAddress.mutateAsync(newAddr)
+      setSelected(created.id)
+      setNewAddr(emptyAddress)
+      setShowNew(false)
+      notify('Dirección guardada')
+    } catch {
+      notify('No se pudo guardar la dirección', 'error')
+    }
+  }
+
   function handleCheckout() {
     // Gate de compra: navegar es libre, pero para confirmar el pedido
     // hace falta iniciar sesión. Volvemos al carrito tras autenticarse.
-    if (!isAuthenticated()) {
+    if (!authed) {
       notify('Inicia sesión para completar tu compra', 'error')
       navigate('/login', { state: { from: '/carrito' } })
       return
     }
-    const userId = getUserId()
-    if (!userId) {
-      notify('No se pudo identificar tu sesión. Vuelve a iniciar sesión.', 'error')
+    if (selected == null) {
+      notify('Elige o añade una dirección de envío', 'error')
       return
     }
     checkout(
-      { userId, items },
+      { items, direccion: selected },
       {
         onSuccess: (order) => {
           clear()
           notify(`Pedido #${order.id} realizado con éxito`)
           navigate('/mis-pedidos')
         },
-        onError: () =>
-          notify('Ocurrió un error al procesar tu pedido. Inténtalo de nuevo.', 'error'),
+        // El backend devuelve el motivo (p. ej. stock insuficiente); lo mostramos.
+        onError: (err) =>
+          notify(
+            err instanceof Error
+              ? err.message
+              : 'Ocurrió un error al procesar tu pedido. Inténtalo de nuevo.',
+            'error'
+          ),
       }
     )
   }
@@ -50,6 +85,10 @@ export default function CartPage() {
       </div>
     )
   }
+
+  // Con sesión iniciada exigimos una dirección de envío (guardada o nueva).
+  const needsAddress = authed && selected == null
+  const showNewForm = authed && (showNew || addresses.length === 0)
 
   return (
     <div className="cart-page">
@@ -104,12 +143,86 @@ export default function CartPage() {
             <span>Total</span>
             <span>S/ {total.toFixed(2)}</span>
           </div>
-          <button className="add-btn checkout-btn" onClick={handleCheckout} disabled={placing}>
+
+          {authed && (
+            <div className="checkout-address">
+              <h3>Dirección de envío</h3>
+
+              {addresses.length > 0 && !showNew && (
+                <>
+                  <ul className="address-choices">
+                    {addresses.map((a) => (
+                      <li key={a.id}>
+                        <label className={`address-choice ${selected === a.id ? 'selected' : ''}`}>
+                          <input
+                            type="radio"
+                            name="shipping-address"
+                            checked={selected === a.id}
+                            onChange={() => setSelected(a.id)}
+                          />
+                          <span className="address-choice-text">
+                            <strong>{a.calle}</strong>
+                            <span className="muted">
+                              {a.ciudad}, {a.provincia}
+                            </span>
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" className="link-btn" onClick={() => setShowNew(true)}>
+                    ＋ Añadir otra dirección
+                  </button>
+                </>
+              )}
+
+              {showNewForm && (
+                <form className="form address-inline" onSubmit={handleAddAddress}>
+                  <input
+                    placeholder="Calle y número"
+                    value={newAddr.calle}
+                    onChange={(e) => setNewAddr({ ...newAddr, calle: e.target.value })}
+                    required
+                  />
+                  <input
+                    placeholder="Ciudad"
+                    value={newAddr.ciudad}
+                    onChange={(e) => setNewAddr({ ...newAddr, ciudad: e.target.value })}
+                    required
+                  />
+                  <input
+                    placeholder="Provincia"
+                    value={newAddr.provincia}
+                    onChange={(e) => setNewAddr({ ...newAddr, provincia: e.target.value })}
+                    required
+                  />
+                  <div className="inline-actions">
+                    <button type="submit" className="add-btn" disabled={createAddress.isPending}>
+                      {createAddress.isPending ? 'Guardando…' : 'Guardar dirección'}
+                    </button>
+                    {addresses.length > 0 && (
+                      <button type="button" className="ghost-btn" onClick={() => setShowNew(false)}>
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          <button
+            className="add-btn checkout-btn"
+            onClick={handleCheckout}
+            disabled={placing || needsAddress}
+          >
             {placing
               ? 'Procesando…'
-              : isAuthenticated()
-                ? 'Confirmar pedido'
-                : 'Iniciar sesión para comprar'}
+              : !authed
+                ? 'Iniciar sesión para comprar'
+                : needsAddress
+                  ? 'Añade una dirección'
+                  : 'Confirmar pedido'}
           </button>
           <Link to="/" className="continue-link">
             ← Seguir comprando

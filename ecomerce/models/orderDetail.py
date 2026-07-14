@@ -3,7 +3,7 @@ from .order import Order
 from .product import Product
 
 
-class orderDetail(models.Model):
+class OrderDetail(models.Model):
 
     pedido = models.ForeignKey(
         Order,

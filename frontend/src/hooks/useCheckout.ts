@@ -7,11 +7,10 @@ import type { CartItem } from '../types'
 export function useCheckout() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ userId, items }: { userId: number; items: CartItem[] }) =>
-      placeOrder(userId, items),
+    mutationFn: ({ items, direccion }: { items: CartItem[]; direccion?: number | null }) =>
+      placeOrder(items, direccion),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
-      // El stock cambia tras la compra: invalidamos también los productos.
       qc.invalidateQueries({ queryKey: queryKeys.products })
     },
   })

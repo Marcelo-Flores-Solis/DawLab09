@@ -39,7 +39,29 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (!res.ok) {
-    throw new Error(`Error ${res.status} al llamar a ${path}`)
+    // Intentamos extraer el mensaje del backend (DRF suele enviar `detail`),
+    // para poder mostrar errores útiles como "Stock insuficiente…".
+    let message = `Error ${res.status} al llamar a ${path}`
+    try {
+      // DRF envía los errores de varias formas: "texto", {"detail": ...},
+      // ["texto"] (ValidationError), o {"campo": ["error", ...]}.
+      const data = await res.json()
+      const firstMessage = (value: unknown): string | null => {
+        if (typeof value === 'string') return value
+        if (Array.isArray(value)) return firstMessage(value[0])
+        if (value && typeof value === 'object') {
+          const obj = value as Record<string, unknown>
+          if ('detail' in obj) return firstMessage(obj.detail)
+          const first = Object.values(obj)[0]
+          if (first !== undefined) return firstMessage(first)
+        }
+        return null
+      }
+      message = firstMessage(data) ?? message
+    } catch {
+      // Sin cuerpo JSON: nos quedamos con el mensaje genérico.
+    }
+    throw new Error(message)
   }
 
   // 204 No Content (típico en DELETE) no trae cuerpo JSON.

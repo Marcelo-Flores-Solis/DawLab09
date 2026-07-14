@@ -35,6 +35,7 @@ export interface Order {
   estado: OrderStatus
   fecha: string
   total: string
+  direccion?: number | null // FK -> Address.id (dirección de envío, opcional)
   detalles?: OrderDetail[]
 }
 
@@ -55,6 +56,14 @@ export interface CartItem {
   categoria: number
   imagen: string | null
   cantidad: number
+}
+
+// Envoltura de paginación de DRF (PageNumberPagination).
+export interface Paginated<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
 }
 
 // Respuesta de los endpoints de autenticación JWT (SimpleJWT).

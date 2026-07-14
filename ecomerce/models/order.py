@@ -2,6 +2,8 @@ from django.db import models
 from django.db.models import Sum
 from django.contrib.auth.models import User
 
+from .adress import Address
+
 
 class Order(models.Model):
 
@@ -14,6 +16,17 @@ class Order(models.Model):
     usuario = models.ForeignKey(
         User,
         on_delete=models.CASCADE
+    )
+
+    # Dirección de envío elegida en el checkout. Nullable para no romper pedidos
+    # antiguos; SET_NULL para conservar el historial del pedido aunque el
+    # cliente borre luego la dirección.
+    direccion = models.ForeignKey(
+        Address,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pedidos',
     )
 
     fecha = models.DateTimeField(auto_now_add=True)
