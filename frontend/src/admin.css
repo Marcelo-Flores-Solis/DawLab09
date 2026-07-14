@@ -15,8 +15,8 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 14px 32px;
+  gap: 16px 24px;
+  padding: 12px var(--gutter);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
@@ -69,12 +69,12 @@
 }
 
 .admin-content {
-  padding: 32px;
+  padding: 28px var(--gutter);
   flex: 1;
 }
 
 .admin-content h2 {
-  font-size: 26px;
+  font-size: clamp(22px, 4vw, 26px);
   font-weight: 700;
   margin-bottom: 24px;
 }
@@ -418,4 +418,34 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* ---------- Responsive del panel admin ---------- */
+@media (max-width: 760px) {
+  .admin-user {
+    display: none;
+  }
+
+  .admin-panel .form {
+    max-width: 100%;
+  }
+
+  .admin-panel .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tablas anchas: scroll horizontal en vez de romper el layout */
+  .admin-panel table.card {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .admin-panel table.card th,
+  .admin-panel table.card td {
+    white-space: nowrap;
+  }
+
+  .admin-panel .actions {
+    flex-wrap: wrap;
+  }
 }

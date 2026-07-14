@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { NavLink, useNavigate, Link } from 'react-router-dom'
 import { logout, getUsername, isAuthenticated, getIsStaff } from '../api/auth'
 import { useCart } from '../hooks/useCart'
 
-// Barra de navegación de la tienda (Requisito 6). Extraída del layout para que
-// sea un componente reutilizable e independiente.
+// Barra de navegación de la tienda. En móvil, los enlaces y las acciones de
+// sesión se colapsan en un menú que abre el botón hamburguesa; el carrito queda
+// siempre visible.
 export default function Navbar() {
   const navigate = useNavigate()
   const { count, clear } = useCart()
@@ -11,61 +13,89 @@ export default function Navbar() {
   const staff = getIsStaff()
   const username = getUsername()
 
+  const [menuOpen, setMenuOpen] = useState(false)
+  const closeMenu = () => setMenuOpen(false)
+
   function handleLogout() {
     clear()
     logout()
+    closeMenu()
     navigate('/', { replace: true })
   }
 
+  const linkClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'active' : '')
+
   return (
     <header className="store-header">
-      <Link to="/" className="brand">
+      <Link to="/" className="brand" onClick={closeMenu}>
         <span className="brand-mark">◆</span>
         <span className="brand-name">
           Aurum<span className="brand-accent">Store</span>
         </span>
       </Link>
 
-      <nav className="store-nav">
-        <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-          Tienda
-        </NavLink>
-        {authed && (
-          <NavLink to="/mis-pedidos" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Mis pedidos
+      <div className={`store-menu ${menuOpen ? 'open' : ''}`}>
+        <nav className="store-nav" onClick={closeMenu}>
+          <NavLink to="/" end className={linkClass}>
+            Tienda
           </NavLink>
-        )}
-        {authed && (
-          <NavLink to="/mi-perfil" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Mi perfil
-          </NavLink>
-        )}
-        {staff && (
-          <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Panel admin
-          </NavLink>
-        )}
-      </nav>
+          {authed && (
+            <NavLink to="/mis-pedidos" className={linkClass}>
+              Mis pedidos
+            </NavLink>
+          )}
+          {authed && (
+            <NavLink to="/mi-perfil" className={linkClass}>
+              Mi perfil
+            </NavLink>
+          )}
+          {staff && (
+            <NavLink to="/admin" className={linkClass}>
+              Panel admin
+            </NavLink>
+          )}
+        </nav>
 
-      <div className="store-header-right">
-        {authed && <span className="store-user">Hola, {username || 'cliente'}</span>}
+        <div className="store-auth">
+          {authed && <span className="store-user">Hola, {username || 'cliente'}</span>}
+          {authed ? (
+            <button className="ghost-btn" onClick={handleLogout}>
+              Salir
+            </button>
+          ) : (
+            <button
+              className="ghost-btn"
+              onClick={() => {
+                closeMenu()
+                navigate('/login')
+              }}
+            >
+              Iniciar sesión
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="store-actions">
         <button
           className="cart-button"
-          onClick={() => navigate('/carrito')}
+          onClick={() => {
+            closeMenu()
+            navigate('/carrito')
+          }}
           aria-label="Ver carrito"
         >
           <span className="cart-icon">🛒</span>
           {count > 0 && <span className="cart-badge">{count}</span>}
         </button>
-        {authed ? (
-          <button className="ghost-btn" onClick={handleLogout}>
-            Salir
-          </button>
-        ) : (
-          <button className="ghost-btn" onClick={() => navigate('/login')}>
-            Iniciar sesión
-          </button>
-        )}
+        <button
+          className="nav-toggle"
+          aria-label="Menú"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </div>
     </header>
   )
