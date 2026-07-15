@@ -3,78 +3,13 @@ from collections import defaultdict
 from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import *
-from .serializers import (
-    CategorySerializer,
-    ProductSerializer,
-    OrderSerializer,
-    OrderDetailSerializer,
-    AddressSerializer,
-    ProfileSerializer,
-)
-from .serializers.checkoutSerializer import CheckoutSerializer
-from .serializers.tokenSerializer import CustomTokenObtainPairSerializer
-
-
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-
-
-class ProfileView(RetrieveUpdateAPIView):
-    """Perfil del usuario autenticado (GET / PUT / PATCH sobre /api/profile/).
-
-    Siempre opera sobre el perfil del usuario del token; si aún no existe, se
-    crea vacío al primer acceso.
-    """
-
-    serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self):
-        profile, _ = Profile.objects.get_or_create(user=self.request.user)
-        return profile
-
-
-class CategoryViewSet(viewsets.ModelViewSet):
-    # prefetch_related evita el N+1 al serializar los productos anidados.
-    queryset = Category.objects.prefetch_related('productos').order_by('id')
-    serializer_class = CategorySerializer
-
-    def get_permissions(self):
-        # Catálogo público de sólo lectura; escritura sólo para staff.
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
-
-
-class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.select_related('categoria').order_by('id')
-    serializer_class = ProductSerializer
-    # Búsqueda por nombre/descripción y ordenamiento configurables por query param
-    # (?search=..., ?ordering=precio). El filtro por categoría se resuelve abajo.
-    filter_backends = [SearchFilter, OrderingFilter]
-    search_fields = ['nombre', 'descripcion']
-    ordering_fields = ['precio', 'nombre', 'id']
-    ordering = ['id']
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
-
-    def get_queryset(self):
-        qs = Product.objects.select_related('categoria').order_by('id')
-        categoria = self.request.query_params.get('categoria')
-        if categoria:
-            qs = qs.filter(categoria_id=categoria)
-        return qs
+from ecomerce.models import Address, Order, OrderDetail, Product
+from ecomerce.serializers import OrderSerializer
+from ecomerce.serializers.checkoutSerializer import CheckoutSerializer
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -205,65 +140,3 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.recalcular_total()
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
-
-
-class OrderDetailViewSet(viewsets.ModelViewSet):
-    queryset = OrderDetail.objects.all()
-    serializer_class = OrderDetailSerializer
-
-    def get_permissions(self):
-        # Igual que los pedidos: el cliente sólo agrega líneas al crear su
-        # pedido; editar o borrar líneas queda reservado al staff.
-        if self.action in ['update', 'partial_update', 'destroy']:
-            return [IsAdminUser()]
-        return [IsAuthenticated()]
-
-    def get_queryset(self):
-        qs = OrderDetail.objects.select_related('producto', 'pedido').order_by('id')
-        user = self.request.user
-        if user.is_staff:
-            return qs
-        return qs.filter(pedido__usuario=user)
-
-    def perform_create(self, serializer):
-        pedido = serializer.validated_data.get('pedido')
-        producto = serializer.validated_data.get('producto')
-        user = self.request.user
-        if not user.is_staff and pedido is not None and pedido.usuario_id != user.id:
-            raise PermissionDenied('No puedes agregar productos a un pedido que no es tuyo.')
-        # El precio se fija en el servidor desde el producto (no del cliente).
-        detalle = serializer.save(precio_unitario=producto.precio)
-        detalle.pedido.recalcular_total()
-
-    def perform_update(self, serializer):
-        detalle = serializer.save()
-        # Mantener el precio alineado al producto y recalcular subtotal/total.
-        detalle.precio_unitario = detalle.producto.precio
-        detalle.save()
-        detalle.pedido.recalcular_total()
-
-    def perform_destroy(self, instance):
-        pedido = instance.pedido
-        instance.delete()
-        pedido.recalcular_total()
-
-
-class AddressViewSet(viewsets.ModelViewSet):
-    queryset = Address.objects.all()
-    serializer_class = AddressSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        qs = Address.objects.select_related('usuario').order_by('id')
-        user = self.request.user
-        if user.is_staff:
-            return qs
-        return qs.filter(usuario=user)
-
-    def perform_create(self, serializer):
-        # El cliente siempre crea a su propio nombre (usuario del token). El
-        # staff puede crear para otro usuario si lo indica; si no, para sí mismo.
-        if self.request.user.is_staff and serializer.validated_data.get('usuario'):
-            serializer.save()
-        else:
-            serializer.save(usuario=self.request.user)
