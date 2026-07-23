@@ -13,7 +13,14 @@ export default function StoreLayout() {
       </main>
 
       <footer className="store-footer">
-        <p>{t('footer.text')}</p>
+        <div className="footer-brand">
+          <span className="brand-mark">◆</span>
+          <span className="brand-name">
+            Aurum<span className="brand-accent">Store</span>
+          </span>
+        </div>
+        <p className="footer-tagline">{t('footer.tagline')}</p>
+        <p className="footer-rights">{t('footer.rights', { year: new Date().getFullYear() })}</p>
       </footer>
     </div>
   )

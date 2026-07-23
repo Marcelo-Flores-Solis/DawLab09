@@ -27,6 +27,7 @@ from ecomerce.views import (
     OrderDetailViewSet,
     AddressViewSet,
     ProfileView,
+    RegisterView,
     CustomTokenObtainPairView,
 )
 
@@ -45,6 +46,7 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/profile/', ProfileView.as_view(), name='profile'),
+    path('api/register/', RegisterView.as_view(), name='register'),
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

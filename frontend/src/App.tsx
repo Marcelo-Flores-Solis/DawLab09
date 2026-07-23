@@ -6,6 +6,7 @@ import AdminRoute from './components/AdminRoute'
 import StoreLayout from './components/StoreLayout'
 import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import StorePage from './pages/StorePage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CartPage from './pages/CartPage'
@@ -23,6 +24,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="login" element={<LoginPage />} />
+            <Route path="registro" element={<RegisterPage />} />
 
             {/* Tienda pública: cualquiera puede navegar y armar el carrito */}
             <Route element={<StoreLayout />}>

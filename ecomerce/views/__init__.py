@@ -1,4 +1,5 @@
 from .tokenView import CustomTokenObtainPairView
+from .registerView import RegisterView
 from .profileView import ProfileView
 from .categoryView import CategoryViewSet
 from .productView import ProductViewSet

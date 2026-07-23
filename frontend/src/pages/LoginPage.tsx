@@ -27,6 +27,12 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      <div className="auth-aura" aria-hidden="true">
+        <span className="aura-blob aura-blob-1" />
+        <span className="aura-blob aura-blob-2" />
+        <span className="aura-blob aura-blob-3" />
+      </div>
+
       <div className="login-card">
         <div className="login-brand">
           <span className="brand-mark">◆</span>
@@ -58,6 +64,13 @@ export default function LoginPage() {
             {isPending ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
+
+        <p className="auth-switch">
+          {t('login.noAccount')}{' '}
+          <Link to="/registro" className="auth-switch-link">
+            {t('login.goRegister')}
+          </Link>
+        </p>
 
         <Link to="/" className="continue-link">
           {t('login.back')}

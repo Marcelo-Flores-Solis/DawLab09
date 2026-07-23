@@ -18,6 +18,32 @@ export async function login(username: string, password: string): Promise<TokenPa
   return data
 }
 
+// Registro de un cliente nuevo. En caso de error lanza un código estable
+// ('username_taken' | 'weak_password' | 'generic') para que la UI muestre el
+// mensaje traducido correspondiente, sin acoplarse al texto del backend.
+export async function register(
+  username: string,
+  password: string,
+  email = ''
+): Promise<void> {
+  const res = await fetch(`${baseURL}/register/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, email }),
+  })
+  if (!res.ok) {
+    let code = 'generic'
+    try {
+      const data = (await res.json()) as Record<string, unknown>
+      if (data.username) code = 'username_taken'
+      else if (data.password) code = 'weak_password'
+    } catch {
+      // Sin cuerpo JSON: código genérico.
+    }
+    throw new Error(code)
+  }
+}
+
 export function logout(): void {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
