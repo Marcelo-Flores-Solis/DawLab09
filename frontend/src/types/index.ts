@@ -32,10 +32,12 @@ export interface OrderDetail {
 export interface Order {
   id: number
   usuario: number // FK -> User.id
+  usuario_username?: string // nombre de usuario del comprador (solo lectura)
   estado: OrderStatus
   fecha: string
   total: string
   direccion?: number | null // FK -> Address.id (dirección de envío, opcional)
+  direccion_detalle?: Address | null // dirección de envío completa (solo lectura)
   detalles?: OrderDetail[]
 }
 

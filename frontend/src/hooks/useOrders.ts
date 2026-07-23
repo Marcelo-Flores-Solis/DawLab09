@@ -31,6 +31,17 @@ export function useUpdateOrderStatus() {
   })
 }
 
+// Actualización parcial de un pedido (solo staff): estado, dirección de envío
+// y/o comprador. Se envía únicamente lo que cambia.
+export function useUpdateOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<OrderPayload> }) =>
+      ordersApi.patch(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.orders }),
+  })
+}
+
 export function useDeleteOrder() {
   const qc = useQueryClient()
   return useMutation({

@@ -410,6 +410,12 @@
   background: var(--bg);
 }
 
+/* Dirección de envío del pedido (vista) */
+.admin-panel .order-address {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
 /* Bloque de edición dentro de la tarjeta del pedido */
 .admin-panel .order-editor {
   margin-top: 12px;
@@ -418,6 +424,35 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Campos de edición del pedido (estado, comprador, dirección) */
+.admin-panel .edit-fields {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.admin-panel .edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.admin-panel .edit-field span {
+  font-weight: 600;
+}
+
+.admin-panel .edit-field select,
+.admin-panel .edit-field input {
+  min-width: 150px;
+}
+
+.admin-panel .edit-fields > button {
+  white-space: nowrap;
 }
 
 /* ---------- Responsive del panel admin ---------- */

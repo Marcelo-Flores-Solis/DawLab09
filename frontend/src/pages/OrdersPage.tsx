@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { useOrders, useCreateOrder, useCreateOrderDetail, useUpdateOrderStatus, useDeleteOrder, useDeleteOrderDetail } from '../hooks/useOrders'
+import { useOrders, useCreateOrder, useCreateOrderDetail, useUpdateOrder, useDeleteOrder, useDeleteOrderDetail } from '../hooks/useOrders'
 import { useProducts } from '../hooks/useProducts'
-import type { Order, OrderStatus } from '../types'
+import { useAddresses } from '../hooks/useAddresses'
+import type { Address, Order, OrderStatus } from '../types'
+
+function formatAddress(a: Address): string {
+  return `${a.calle} — ${a.ciudad}, ${a.provincia}`
+}
 
 const ESTADOS: OrderStatus[] = ['pendiente', 'pagado', 'enviado']
 
@@ -15,10 +20,11 @@ const emptyLine: DraftLine = { producto: '', cantidad: '1' }
 export default function OrdersPage() {
   const { data: orders = [], isLoading, isError } = useOrders()
   const { data: products = [] } = useProducts()
+  const { data: addresses = [] } = useAddresses()
 
   const createOrder = useCreateOrder()
   const createOrderDetail = useCreateOrderDetail()
-  const updateStatus = useUpdateOrderStatus()
+  const updateOrder = useUpdateOrder()
   const deleteOrder = useDeleteOrder()
   const deleteOrderDetail = useDeleteOrderDetail()
 
@@ -34,14 +40,22 @@ export default function OrdersPage() {
   // --- Edición de un pedido existente (sólo admin) ---
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editEstado, setEditEstado] = useState<OrderStatus>('pendiente')
+  const [editUsuario, setEditUsuario] = useState('')
+  const [editDireccion, setEditDireccion] = useState('') // '' = sin dirección
   const [editLine, setEditLine] = useState<DraftLine>(emptyLine)
 
   const busy =
     createOrder.isPending ||
     createOrderDetail.isPending ||
-    updateStatus.isPending ||
+    updateOrder.isPending ||
     deleteOrder.isPending ||
     deleteOrderDetail.isPending
+
+  const addressLabel = (id: number | null | undefined) => {
+    if (id == null) return null
+    const a = addresses.find((x) => x.id === id)
+    return a ? formatAddress(a) : `Dirección #${id}`
+  }
 
   const productName = (id: number | string) =>
     products.find((p) => p.id === Number(id))?.nombre ?? `Producto #${id}`
@@ -97,6 +111,8 @@ export default function OrdersPage() {
   function startEdit(order: Order) {
     setEditingId(order.id)
     setEditEstado(order.estado)
+    setEditUsuario(String(order.usuario))
+    setEditDireccion(order.direccion != null ? String(order.direccion) : '')
     setEditLine(emptyLine)
     setError(null)
     setSuccess(null)
@@ -107,12 +123,23 @@ export default function OrdersPage() {
     setEditLine(emptyLine)
   }
 
-  async function saveEstado(orderId: number) {
+  async function saveOrderMeta(orderId: number) {
+    if (!editUsuario || Number(editUsuario) < 1) {
+      setError('El ID de usuario del comprador no es válido.')
+      return
+    }
     try {
-      await updateStatus.mutateAsync({ id: orderId, estado: editEstado })
+      await updateOrder.mutateAsync({
+        id: orderId,
+        data: {
+          estado: editEstado,
+          usuario: Number(editUsuario),
+          direccion: editDireccion === '' ? null : Number(editDireccion),
+        },
+      })
       flash(`Pedido #${orderId} actualizado.`)
     } catch {
-      setError('No se pudo actualizar el estado.')
+      setError('No se pudo actualizar el pedido. Revisa el ID de usuario y la dirección.')
     }
   }
 
@@ -258,8 +285,18 @@ export default function OrdersPage() {
                 </div>
 
                 <p className="order-meta">
-                  Usuario ID: {order.usuario} · {new Date(order.fecha).toLocaleString()} ·{' '}
+                  Comprador: <strong>{order.usuario_username ?? `Usuario #${order.usuario}`}</strong>{' '}
+                  <span className="muted">(ID {order.usuario})</span> ·{' '}
+                  {new Date(order.fecha).toLocaleString()} ·{' '}
                   <span className={`status-badge status-${order.estado}`}>{order.estado}</span>
+                </p>
+                <p className="order-address">
+                  <strong>Envío: </strong>
+                  {order.direccion_detalle
+                    ? formatAddress(order.direccion_detalle)
+                    : addressLabel(order.direccion) ?? (
+                        <span className="muted">Sin dirección de envío</span>
+                      )}
                 </p>
                 <p>
                   <strong>Total: S/. {Number(order.total).toFixed(2)}</strong>
@@ -291,19 +328,45 @@ export default function OrdersPage() {
 
                 {editing && (
                   <div className="order-editor">
-                    <div className="line-builder">
-                      <select
-                        value={editEstado}
-                        onChange={(e) => setEditEstado(e.target.value as OrderStatus)}
-                      >
-                        {ESTADOS.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                      <button onClick={() => saveEstado(order.id)} disabled={busy}>
-                        Guardar estado
+                    <div className="edit-fields">
+                      <label className="edit-field">
+                        <span>Estado</span>
+                        <select
+                          value={editEstado}
+                          onChange={(e) => setEditEstado(e.target.value as OrderStatus)}
+                        >
+                          {ESTADOS.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="edit-field">
+                        <span>Comprador (ID de usuario)</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editUsuario}
+                          onChange={(e) => setEditUsuario(e.target.value)}
+                        />
+                      </label>
+                      <label className="edit-field">
+                        <span>Dirección de envío</span>
+                        <select
+                          value={editDireccion}
+                          onChange={(e) => setEditDireccion(e.target.value)}
+                        >
+                          <option value="">Sin dirección</option>
+                          {addresses.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              #{a.id} · {formatAddress(a)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button onClick={() => saveOrderMeta(order.id)} disabled={busy}>
+                        Guardar cambios
                       </button>
                     </div>
                     <div className="line-builder">

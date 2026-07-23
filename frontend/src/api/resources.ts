@@ -54,6 +54,8 @@ export interface CategoryPayload {
 export interface OrderPayload {
   usuario: number
   estado: string
+  // Dirección de envío (opcional): el panel admin puede asignarla o cambiarla.
+  direccion?: number | null
 }
 
 export interface OrderDetailPayload {

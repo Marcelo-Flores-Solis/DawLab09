@@ -86,6 +86,13 @@ export default function MyOrdersPage() {
               )}
             </ul>
 
+            {order.direccion_detalle && (
+              <p className="muted order-shipping">
+                🚚 Envío a: {order.direccion_detalle.calle}, {order.direccion_detalle.ciudad},{' '}
+                {order.direccion_detalle.provincia}
+              </p>
+            )}
+
             <div className="order-total">
               <span>Total</span>
               <span>S/ {Number(order.total).toFixed(2)}</span>
