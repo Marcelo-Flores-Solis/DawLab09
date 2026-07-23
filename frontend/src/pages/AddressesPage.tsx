@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   useAddresses,
   useCreateAddress,
@@ -16,6 +17,7 @@ interface AddressForm {
 const emptyForm: AddressForm = { usuario: '', calle: '', ciudad: '', provincia: '' }
 
 export default function AddressesPage() {
+  const { t } = useTranslation()
   const { data: addresses = [], isLoading, isError } = useAddresses()
   const createAddress = useCreateAddress()
   const deleteAddress = useDeleteAddress()
@@ -35,32 +37,29 @@ export default function AddressesPage() {
     try {
       await createAddress.mutateAsync({ ...form, usuario: Number(form.usuario) })
       setForm(emptyForm)
-      setSuccess('Dirección creada.')
+      setSuccess(t('admin.addresses.created'))
     } catch {
-      setError('Error al crear la dirección. Verifica el ID de usuario.')
+      setError(t('admin.addresses.createError'))
     }
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar esta dirección?')) return
+    if (!confirm(t('admin.addresses.confirmDelete'))) return
     await deleteAddress.mutateAsync(id)
-    setSuccess('Dirección eliminada.')
+    setSuccess(t('admin.addresses.deleted'))
   }
 
   return (
     <div>
-      <h2>Direcciones</h2>
-      {(isError || error) && <p className="error">{error ?? 'No se pudo conectar con la API.'}</p>}
+      <h2>{t('admin.addresses.title')}</h2>
+      {(isError || error) && <p className="error">{error ?? t('admin.common.connError')}</p>}
       {success && <p className="success">{success}</p>}
-      <p className="hint">
-        No hay endpoint de usuarios expuesto: usa el ID de un usuario existente (ver Django Admin en{' '}
-        <code>/admin/</code>).
-      </p>
+      <p className="hint">{t('admin.addresses.hint')}</p>
 
       <form className="card form" onSubmit={handleSubmit}>
-        <h3>Nueva dirección</h3>
-        <input name="usuario" type="number" min="1" placeholder="ID de usuario" value={form.usuario} onChange={handleChange} required />
-        <input name="calle" placeholder="Calle" value={form.calle} onChange={handleChange} required />
+        <h3>{t('admin.addresses.newTitle')}</h3>
+        <input name="usuario" type="number" min="1" placeholder={t('admin.orders.userIdPlaceholder')} value={form.usuario} onChange={handleChange} required />
+        <input name="calle" placeholder={t('admin.addresses.street')} value={form.calle} onChange={handleChange} required />
         <AddressLocationFields
           departamento={form.provincia}
           provincia={form.ciudad}
@@ -70,24 +69,24 @@ export default function AddressesPage() {
         />
         <div className="actions">
           <button type="submit" disabled={createAddress.isPending}>
-            {createAddress.isPending ? 'Guardando...' : 'Crear dirección'}
+            {createAddress.isPending ? t('admin.common.savingDots') : t('admin.addresses.create')}
           </button>
         </div>
       </form>
 
       {isLoading ? (
-        <p>Cargando...</p>
+        <p>{t('admin.common.loadingDots')}</p>
       ) : addresses.length === 0 ? (
-        <p className="hint">Aún no hay direcciones. Crea una con el formulario de arriba.</p>
+        <p className="hint">{t('admin.addresses.empty')}</p>
       ) : (
         <table className="card">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Usuario</th>
-              <th>Calle</th>
-              <th>Ciudad</th>
-              <th>Provincia</th>
+              <th>{t('admin.addresses.thUser')}</th>
+              <th>{t('admin.addresses.thStreet')}</th>
+              <th>{t('admin.addresses.thCity')}</th>
+              <th>{t('admin.addresses.thProvince')}</th>
               <th></th>
             </tr>
           </thead>
@@ -100,7 +99,7 @@ export default function AddressesPage() {
                 <td>{a.ciudad}</td>
                 <td>{a.provincia}</td>
                 <td>
-                  <button onClick={() => handleDelete(a.id)}>Eliminar</button>
+                  <button onClick={() => handleDelete(a.id)}>{t('common.delete')}</button>
                 </td>
               </tr>
             ))}

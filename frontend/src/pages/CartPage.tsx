@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useCart } from '../hooks/useCart'
 import { useToast } from '../hooks/useToast'
 import { isAuthenticated } from '../api/auth'
@@ -32,6 +33,7 @@ function contactFromProfile(p?: Profile): PersonalDataForm {
 const emptyAddress = { calle: '', ciudad: '', provincia: '' }
 
 export default function CartPage() {
+  const { t } = useTranslation()
   const { items, setQty, removeItem, clear, total, syncWith } = useCart()
   const { notify } = useToast()
   const navigate = useNavigate()
@@ -65,7 +67,7 @@ export default function CartPage() {
 
   function fillFromProfile() {
     setContact(contactFromProfile(profile))
-    notify('Datos traídos de tu perfil')
+    notify(t('toast.dataFromProfile'))
   }
 
   // Detecta líneas con precio/stock desactualizado respecto al backend, o
@@ -89,7 +91,7 @@ export default function CartPage() {
 
   function handleSync() {
     syncWith(products)
-    notify('Actualizamos precios y stock de tu carrito')
+    notify(t('toast.cartSynced'))
   }
 
   async function handleAddAddress(e: FormEvent<HTMLFormElement>) {
@@ -99,9 +101,9 @@ export default function CartPage() {
       setSelected(created.id)
       setNewAddr(emptyAddress)
       setShowNew(false)
-      notify('Dirección guardada')
+      notify(t('toast.addressSaved'))
     } catch {
-      notify('No se pudo guardar la dirección', 'error')
+      notify(t('toast.addressSaveError'), 'error')
     }
   }
 
@@ -109,12 +111,12 @@ export default function CartPage() {
     // Gate de compra: navegar es libre, pero para confirmar el pedido
     // hace falta iniciar sesión. Volvemos al carrito tras autenticarse.
     if (!authed) {
-      notify('Inicia sesión para completar tu compra', 'error')
+      notify(t('toast.loginToCheckout'), 'error')
       navigate('/login', { state: { from: '/carrito' } })
       return
     }
     if (hasStale) {
-      notify('Tu carrito tiene precios desactualizados. Actualízalo antes de comprar.', 'error')
+      notify(t('toast.staleCheckout'), 'error')
       return
     }
     const contactErr = personalDataErrors(contact, { require: true })
@@ -123,7 +125,7 @@ export default function CartPage() {
       return
     }
     if (selected == null) {
-      notify('Elige o añade una dirección de envío', 'error')
+      notify(t('toast.chooseAddress'), 'error')
       return
     }
     // Guardamos (y revalidamos en el servidor) los datos de contacto en el
@@ -136,7 +138,7 @@ export default function CartPage() {
         telefono: contact.telefono,
       })
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Revisa tus datos de contacto', 'error')
+      notify(err instanceof Error ? err.message : t('toast.checkContact'), 'error')
       return
     }
     checkout(
@@ -144,19 +146,14 @@ export default function CartPage() {
       {
         onSuccess: (order) => {
           clear()
-          notify(`Pedido #${order.id} realizado con éxito`)
+          notify(t('toast.orderPlaced', { id: order.id }))
           navigate('/mis-pedidos')
         },
         // Ante un error (p. ej. precio cambiado 409 o stock insuficiente),
         // refrescamos los productos para que el aviso del carrito se actualice.
         onError: (err) => {
           void refetchProducts()
-          notify(
-            err instanceof Error
-              ? err.message
-              : 'Ocurrió un error al procesar tu pedido. Inténtalo de nuevo.',
-            'error'
-          )
+          notify(err instanceof Error ? err.message : t('toast.orderError'), 'error')
         },
       }
     )
@@ -166,10 +163,10 @@ export default function CartPage() {
     return (
       <div className="cart-empty">
         <span className="cart-empty-icon">🛒</span>
-        <h2>Tu carrito está vacío</h2>
-        <p className="muted">Explora la tienda y agrega productos para realizar tu pedido.</p>
+        <h2>{t('cart.emptyTitle')}</h2>
+        <p className="muted">{t('cart.emptyText')}</p>
         <Link to="/" className="add-btn cart-empty-cta">
-          Ir a la tienda
+          {t('common.goToStore')}
         </Link>
       </div>
     )
@@ -182,21 +179,18 @@ export default function CartPage() {
 
   return (
     <div className="cart-page">
-      <h1 className="page-title">Tu carrito</h1>
+      <h1 className="page-title">{t('cart.title')}</h1>
 
       <div className="cart-layout">
         <div className="cart-items">
           {hasStale && (
             <div className="cart-warning">
               <div>
-                <strong>Algunos productos cambiaron</strong>
-                <p className="muted">
-                  El precio o el stock se actualizaron desde que los agregaste. Revisa tu
-                  carrito antes de confirmar.
-                </p>
+                <strong>{t('cart.staleTitle')}</strong>
+                <p className="muted">{t('cart.staleText')}</p>
               </div>
               <button className="add-btn" onClick={handleSync}>
-                Actualizar carrito
+                {t('cart.syncBtn')}
               </button>
             </div>
           )}
@@ -218,11 +212,11 @@ export default function CartPage() {
                 </div>
 
                 <div className="qty-stepper">
-                  <button onClick={() => setQty(item.id, item.cantidad - 1)} aria-label="Restar">
+                  <button onClick={() => setQty(item.id, item.cantidad - 1)} aria-label={t('cart.decrease')}>
                     −
                   </button>
                   <span>{item.cantidad}</span>
-                  <button onClick={() => setQty(item.id, item.cantidad + 1)} aria-label="Sumar">
+                  <button onClick={() => setQty(item.id, item.cantidad + 1)} aria-label={t('cart.increase')}>
                     +
                   </button>
                 </div>
@@ -234,7 +228,7 @@ export default function CartPage() {
                 <button
                   className="remove-btn"
                   onClick={() => removeItem(item.id)}
-                  aria-label="Quitar"
+                  aria-label={t('cart.remove')}
                 >
                   ✕
                 </button>
@@ -244,27 +238,27 @@ export default function CartPage() {
         </div>
 
         <aside className="cart-summary">
-          <h2>Resumen</h2>
+          <h2>{t('cart.summary')}</h2>
           <div className="summary-row">
-            <span>Productos</span>
+            <span>{t('cart.products')}</span>
             <span>{items.reduce((n, p) => n + p.cantidad, 0)}</span>
           </div>
           <div className="summary-row">
-            <span>Subtotal</span>
+            <span>{t('cart.subtotal')}</span>
             <span>S/ {total.toFixed(2)}</span>
           </div>
           <div className="summary-row summary-total">
-            <span>Total</span>
+            <span>{t('cart.total')}</span>
             <span>S/ {total.toFixed(2)}</span>
           </div>
 
           {authed && (
             <div className="checkout-contact">
               <div className="checkout-contact-head">
-                <h3>Datos de contacto</h3>
+                <h3>{t('cart.contactTitle')}</h3>
                 {profile && (profile.dni || profile.nombres) && (
                   <button type="button" className="link-btn" onClick={fillFromProfile}>
-                    Traer de mi perfil
+                    {t('cart.fillFromProfile')}
                   </button>
                 )}
               </div>
@@ -279,7 +273,7 @@ export default function CartPage() {
 
           {authed && (
             <div className="checkout-address">
-              <h3>Dirección de envío</h3>
+              <h3>{t('cart.shippingTitle')}</h3>
 
               {addresses.length > 0 && !showNew && (
                 <>
@@ -304,7 +298,7 @@ export default function CartPage() {
                     ))}
                   </ul>
                   <button type="button" className="link-btn" onClick={() => setShowNew(true)}>
-                    ＋ Añadir otra dirección
+                    {t('cart.addAnother')}
                   </button>
                 </>
               )}
@@ -312,7 +306,7 @@ export default function CartPage() {
               {showNewForm && (
                 <form className="form address-inline" onSubmit={handleAddAddress}>
                   <input
-                    placeholder="Calle y número"
+                    placeholder={t('cart.streetPlaceholder')}
                     value={newAddr.calle}
                     onChange={(e) => setNewAddr({ ...newAddr, calle: e.target.value })}
                     required
@@ -326,11 +320,11 @@ export default function CartPage() {
                   />
                   <div className="inline-actions">
                     <button type="submit" className="add-btn" disabled={createAddress.isPending}>
-                      {createAddress.isPending ? 'Guardando…' : 'Guardar dirección'}
+                      {createAddress.isPending ? t('common.saving') : t('cart.saveAddress')}
                     </button>
                     {addresses.length > 0 && (
                       <button type="button" className="ghost-btn" onClick={() => setShowNew(false)}>
-                        Cancelar
+                        {t('common.cancel')}
                       </button>
                     )}
                   </div>
@@ -345,19 +339,19 @@ export default function CartPage() {
             disabled={busy || hasStale || contactBad || needsAddress}
           >
             {busy
-              ? 'Procesando…'
+              ? t('cart.processing')
               : !authed
-                ? 'Iniciar sesión para comprar'
+                ? t('cart.loginToBuy')
                 : hasStale
-                  ? 'Actualiza tu carrito'
+                  ? t('cart.updateCart')
                   : contactBad
-                    ? 'Completa tus datos'
+                    ? t('cart.completeData')
                     : needsAddress
-                      ? 'Añade una dirección'
-                      : 'Confirmar pedido'}
+                      ? t('cart.addAddressCta')
+                      : t('cart.confirm')}
           </button>
           <Link to="/" className="continue-link">
-            ← Seguir comprando
+            {t('common.continueShopping')}
           </Link>
         </aside>
       </div>

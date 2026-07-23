@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useProfile, useUpdateProfile } from '../hooks/useProfile'
 import { useAddresses, useCreateAddress, useDeleteAddress } from '../hooks/useAddresses'
 import { useToast } from '../hooks/useToast'
@@ -40,6 +41,7 @@ function formatDate(value: string | null): string {
 const emptyAddress = { calle: '', ciudad: '', provincia: '' }
 
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const { notify } = useToast()
 
   // --- Datos personales ---
@@ -84,11 +86,11 @@ export default function ProfilePage() {
         correo: personal.correo,
         fecha_nacimiento: personal.fecha_nacimiento || null,
       })
-      notify('Datos personales guardados')
+      notify(t('toast.profileSaved'))
       // Guardado con éxito: cerramos el formulario y volvemos a la vista estática.
       setEditing(false)
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'No se pudieron guardar tus datos', 'error')
+      notify(err instanceof Error ? err.message : t('toast.profileSaveError'), 'error')
     }
   }
 
@@ -105,19 +107,19 @@ export default function ProfilePage() {
     try {
       await createAddress.mutateAsync(addr)
       setAddr(emptyAddress)
-      notify('Dirección guardada')
+      notify(t('toast.addressSaved'))
     } catch {
-      notify('No se pudo guardar la dirección', 'error')
+      notify(t('toast.addressSaveError'), 'error')
     }
   }
 
   async function removeAddress(id: number) {
-    if (!confirm('¿Eliminar esta dirección?')) return
+    if (!confirm(t('profile.confirmDeleteAddress'))) return
     try {
       await deleteAddress.mutateAsync(id)
-      notify('Dirección eliminada')
+      notify(t('toast.addressDeleted'))
     } catch {
-      notify('No se pudo eliminar la dirección', 'error')
+      notify(t('toast.addressDeleteError'), 'error')
     }
   }
 
@@ -127,20 +129,18 @@ export default function ProfilePage() {
 
   return (
     <div className="profile-page page-pad">
-      <h1 className="page-title">Mi perfil</h1>
+      <h1 className="page-title">{t('profile.title')}</h1>
 
       <section className="profile-section">
         <div className="profile-section-head">
-          <h2>Información personal</h2>
+          <h2>{t('profile.personalTitle')}</h2>
           {!editing && hasData && (
             <button className="ghost-btn" type="button" onClick={startEditing}>
-              Editar
+              {t('common.edit')}
             </button>
           )}
         </div>
-        <p className="muted">
-          Estos datos se usan en tus compras (se autocompletan al confirmar un pedido).
-        </p>
+        <p className="muted">{t('profile.personalHint')}</p>
 
         {editing ? (
           <form className="form profile-form" onSubmit={savePersonal}>
@@ -151,7 +151,7 @@ export default function ProfilePage() {
             />
             <div className="profile-form-actions">
               <button className="add-btn" type="submit" disabled={updateProfile.isPending}>
-                {updateProfile.isPending ? 'Guardando…' : 'Guardar datos'}
+                {updateProfile.isPending ? t('common.saving') : t('profile.saveData')}
               </button>
               {hasData && (
                 <button
@@ -160,7 +160,7 @@ export default function ProfilePage() {
                   onClick={cancelEditing}
                   disabled={updateProfile.isPending}
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
               )}
             </div>
@@ -168,48 +168,48 @@ export default function ProfilePage() {
         ) : hasData ? (
           <dl className="profile-card">
             <div className="profile-field">
-              <dt>Nombres</dt>
+              <dt>{t('profile.fields.nombres')}</dt>
               <dd>{profile?.nombres || '—'}</dd>
             </div>
             <div className="profile-field">
-              <dt>Apellidos</dt>
+              <dt>{t('profile.fields.apellidos')}</dt>
               <dd>{profile?.apellidos || '—'}</dd>
             </div>
             <div className="profile-field">
-              <dt>DNI</dt>
+              <dt>{t('profile.fields.dni')}</dt>
               <dd>{profile?.dni || '—'}</dd>
             </div>
             <div className="profile-field">
-              <dt>Teléfono</dt>
+              <dt>{t('profile.fields.telefono')}</dt>
               <dd>{profile?.telefono || '—'}</dd>
             </div>
             <div className="profile-field">
-              <dt>Correo</dt>
+              <dt>{t('profile.fields.correo')}</dt>
               <dd>{profile?.correo || '—'}</dd>
             </div>
             <div className="profile-field">
-              <dt>Fecha de nacimiento</dt>
+              <dt>{t('profile.fields.fechaNacimiento')}</dt>
               <dd>{formatDate(profile?.fecha_nacimiento ?? null)}</dd>
             </div>
           </dl>
         ) : (
           <div className="profile-empty">
-            <p className="muted">Aún no has completado tus datos personales.</p>
+            <p className="muted">{t('profile.emptyText')}</p>
             <button className="add-btn" type="button" onClick={startEditing}>
-              Completar mis datos
+              {t('profile.completeBtn')}
             </button>
           </div>
         )}
       </section>
 
       <section className="profile-section">
-        <h2>Mis direcciones</h2>
-        <p className="muted">Guárdalas una vez y reutilízalas al confirmar tus compras.</p>
+        <h2>{t('profile.addressesTitle')}</h2>
+        <p className="muted">{t('profile.addressesHint')}</p>
 
         <form className="form address-form" onSubmit={saveAddress}>
           <input
             name="calle"
-            placeholder="Calle y número"
+            placeholder={t('cart.streetPlaceholder')}
             value={addr.calle}
             onChange={handleAddrCalle}
             required
@@ -222,16 +222,16 @@ export default function ProfilePage() {
             }
           />
           <button className="add-btn" type="submit" disabled={createAddress.isPending}>
-            {createAddress.isPending ? 'Guardando…' : 'Guardar dirección'}
+            {createAddress.isPending ? t('common.saving') : t('profile.saveAddress')}
           </button>
         </form>
 
-        {isError && <p className="error">No se pudieron cargar tus direcciones.</p>}
+        {isError && <p className="error">{t('profile.addressesError')}</p>}
 
         {isLoading ? (
-          <p className="muted">Cargando…</p>
+          <p className="muted">{t('common.loading')}</p>
         ) : addresses.length === 0 ? (
-          <p className="muted">Aún no tienes direcciones guardadas.</p>
+          <p className="muted">{t('profile.noAddresses')}</p>
         ) : (
           <ul className="address-list">
             {addresses.map((a) => (
@@ -245,7 +245,7 @@ export default function ProfilePage() {
                 <button
                   className="remove-btn"
                   onClick={() => removeAddress(a.id)}
-                  aria-label="Eliminar dirección"
+                  aria-label={t('profile.deleteAddressAria')}
                 >
                   ✕
                 </button>
@@ -256,7 +256,7 @@ export default function ProfilePage() {
       </section>
 
       <Link to="/" className="continue-link">
-        ← Seguir comprando
+        {t('common.continueShopping')}
       </Link>
     </div>
   )

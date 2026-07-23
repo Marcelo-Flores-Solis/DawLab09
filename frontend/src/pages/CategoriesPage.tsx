@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   useCategories,
   useCreateCategory,
@@ -9,6 +10,7 @@ import type { CategoryPayload } from '../api/resources'
 const emptyForm: CategoryPayload = { nombre: '', descripcion: '' }
 
 export default function CategoriesPage() {
+  const { t } = useTranslation()
   const { data: categories = [], isLoading, isError } = useCategories()
   const createCategory = useCreateCategory()
   const deleteCategory = useDeleteCategory()
@@ -28,53 +30,53 @@ export default function CategoriesPage() {
     try {
       await createCategory.mutateAsync(form)
       setForm(emptyForm)
-      setSuccess('Categoría creada.')
+      setSuccess(t('admin.categories.created'))
     } catch {
-      setError('Error al crear la categoría (¿nombre duplicado?).')
+      setError(t('admin.categories.createError'))
     }
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar esta categoría? Se eliminarán sus productos asociados.')) return
+    if (!confirm(t('admin.categories.confirmDelete'))) return
     await deleteCategory.mutateAsync(id)
-    setSuccess('Categoría eliminada.')
+    setSuccess(t('admin.categories.deleted'))
   }
 
   return (
     <div>
-      <h2>Categorías</h2>
-      {(isError || error) && <p className="error">{error ?? 'No se pudo conectar con la API.'}</p>}
+      <h2>{t('admin.categories.title')}</h2>
+      {(isError || error) && <p className="error">{error ?? t('admin.common.connError')}</p>}
       {success && <p className="success">{success}</p>}
 
       <form className="card form" onSubmit={handleSubmit}>
-        <h3>Nueva categoría</h3>
-        <input name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} required />
-        <textarea name="descripcion" placeholder="Descripción" value={form.descripcion} onChange={handleChange} required />
+        <h3>{t('admin.categories.newTitle')}</h3>
+        <input name="nombre" placeholder={t('admin.common.name')} value={form.nombre} onChange={handleChange} required />
+        <textarea name="descripcion" placeholder={t('admin.common.description')} value={form.descripcion} onChange={handleChange} required />
         <div className="actions">
           <button type="submit" disabled={createCategory.isPending}>
-            {createCategory.isPending ? 'Guardando...' : 'Crear categoría'}
+            {createCategory.isPending ? t('admin.common.savingDots') : t('admin.categories.create')}
           </button>
         </div>
       </form>
 
       {isLoading ? (
-        <p>Cargando...</p>
+        <p>{t('admin.common.loadingDots')}</p>
       ) : categories.length === 0 ? (
-        <p className="hint">Aún no hay categorías. Crea una con el formulario de arriba.</p>
+        <p className="hint">{t('admin.categories.empty')}</p>
       ) : (
         <div className="cards-grid">
           {categories.map((c) => (
             <div className="card" key={c.id}>
               <div className="row-actions">
                 <h3>{c.nombre}</h3>
-                <button onClick={() => handleDelete(c.id)}>Eliminar</button>
+                <button onClick={() => handleDelete(c.id)}>{t('common.delete')}</button>
               </div>
               <p>{c.descripcion}</p>
-              <strong>Productos ({c.productos?.length ?? 0})</strong>
+              <strong>{t('admin.categories.productsCount', { count: c.productos?.length ?? 0 })}</strong>
               <ul>
                 {c.productos?.map((p) => (
                   <li key={p.id}>
-                    {p.nombre} — S/. {p.precio} ({p.stock} en stock)
+                    {t('admin.categories.productLine', { name: p.nombre, price: p.precio, stock: p.stock })}
                   </li>
                 ))}
               </ul>

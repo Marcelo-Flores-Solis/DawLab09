@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useProducts } from '../hooks/useProducts'
 import { useCategories } from '../hooks/useCategories'
 import { useCart } from '../hooks/useCart'
@@ -7,6 +8,7 @@ import ProductList from '../components/ProductList'
 import type { Product } from '../types'
 
 export default function StorePage() {
+  const { t } = useTranslation()
   const { data: products = [], isLoading, isError } = useProducts()
   const { data: categories = [] } = useCategories()
 
@@ -32,26 +34,24 @@ export default function StorePage() {
 
   function handleAdd(product: Product) {
     if (product.stock <= 0) {
-      notify('Producto sin stock', 'error')
+      notify(t('toast.outOfStock'), 'error')
       return
     }
     addItem(product, 1)
-    notify(`${product.nombre} añadido al carrito`)
+    notify(t('toast.addedToCart', { name: product.nombre }))
   }
 
   return (
     <div className="store-page">
       <section className="hero">
         <div className="hero-content">
-          <span className="hero-eyebrow">Tecnología seleccionada</span>
+          <span className="hero-eyebrow">{t('store.eyebrow')}</span>
           <h1 className="hero-title">
-            Equípate con lo mejor,
+            {t('store.heroTitle1')}
             <br />
-            al mejor precio.
+            {t('store.heroTitle2')}
           </h1>
-          <p className="hero-subtitle">
-            Explora nuestro catálogo, arma tu carrito y realiza tu pedido en segundos.
-          </p>
+          <p className="hero-subtitle">{t('store.heroSubtitle')}</p>
         </div>
         <div className="hero-glow" aria-hidden="true" />
       </section>
@@ -61,7 +61,7 @@ export default function StorePage() {
           <input
             className="search-input"
             type="search"
-            placeholder="Buscar productos…"
+            placeholder={t('store.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -70,7 +70,7 @@ export default function StorePage() {
               className={`chip ${activeCat === 'all' ? 'chip-active' : ''}`}
               onClick={() => setActiveCat('all')}
             >
-              Todos
+              {t('store.all')}
             </button>
             {categories.map((c) => (
               <button
@@ -84,14 +84,10 @@ export default function StorePage() {
           </div>
         </div>
 
-        {isError && (
-          <p className="error">
-            No se pudieron cargar los productos. Verifica tu sesión o el servidor.
-          </p>
-        )}
+        {isError && <p className="error">{t('store.loadError')}</p>}
 
         {isLoading ? (
-          <p className="muted">Cargando catálogo…</p>
+          <p className="muted">{t('store.loadingCatalog')}</p>
         ) : (
           <ProductList products={filtered} categoryName={categoryName} onAdd={handleAdd} />
         )}

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { Product } from '../types'
 import ProductThumb from './ProductThumb'
 
@@ -11,6 +12,7 @@ interface ProductCardProps {
 // Tarjeta de producto reutilizable (Requisito 6). Es "tonta": recibe el producto
 // y notifica al padre cuando se pulsa "Agregar", sin conocer el carrito.
 export default function ProductCard({ product, categoryName, onAdd }: ProductCardProps) {
+  const { t } = useTranslation()
   const outOfStock = product.stock <= 0
 
   return (
@@ -19,7 +21,7 @@ export default function ProductCard({ product, categoryName, onAdd }: ProductCar
         <ProductThumb id={product.id} categoryName={categoryName} imageUrl={product.imagen} />
       </Link>
       <div className="product-body">
-        <span className="product-cat">{categoryName ?? 'General'}</span>
+        <span className="product-cat">{categoryName ?? t('product.general')}</span>
         <h3 className="product-name">
           <Link to={`/producto/${product.id}`}>{product.nombre}</Link>
         </h3>
@@ -27,11 +29,11 @@ export default function ProductCard({ product, categoryName, onAdd }: ProductCar
         <div className="product-footer">
           <span className="product-price">S/ {Number(product.precio).toFixed(2)}</span>
           <span className={`stock-tag ${outOfStock ? 'stock-out' : ''}`}>
-            {outOfStock ? 'Agotado' : `${product.stock} disp.`}
+            {outOfStock ? t('product.outOfStock') : t('product.availableShort', { count: product.stock })}
           </span>
         </div>
         <button className="add-btn" onClick={() => onAdd(product)} disabled={outOfStock}>
-          {outOfStock ? 'Sin stock' : 'Agregar al carrito'}
+          {outOfStock ? t('product.noStock') : t('product.addToCart')}
         </button>
       </div>
     </article>

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useLogin } from '../hooks/useAuth'
 
 interface LocationState {
@@ -7,6 +8,7 @@ interface LocationState {
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
@@ -32,14 +34,14 @@ export default function LoginPage() {
             Aurum<span className="brand-accent">Store</span>
           </span>
         </div>
-        <h2>Bienvenido de vuelta</h2>
-        <p className="muted login-sub">Inicia sesión para comprar y ver tus pedidos.</p>
+        <h2>{t('login.title')}</h2>
+        <p className="muted login-sub">{t('login.subtitle')}</p>
 
-        {isError && <p className="error">Usuario o contraseña incorrectos.</p>}
+        {isError && <p className="error">{t('login.error')}</p>}
 
         <form className="form" onSubmit={handleSubmit}>
           <input
-            placeholder="Usuario"
+            placeholder={t('login.username')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoFocus
@@ -47,18 +49,18 @@ export default function LoginPage() {
           />
           <input
             type="password"
-            placeholder="Contraseña"
+            placeholder={t('login.password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
           <button className="add-btn" type="submit" disabled={isPending}>
-            {isPending ? 'Ingresando…' : 'Ingresar'}
+            {isPending ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
 
         <Link to="/" className="continue-link">
-          ← Volver a la tienda
+          {t('login.back')}
         </Link>
       </div>
     </div>

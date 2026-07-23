@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useOrders, useCreateOrder, useCreateOrderDetail, useUpdateOrder, useDeleteOrder, useDeleteOrderDetail } from '../hooks/useOrders'
 import { useProducts } from '../hooks/useProducts'
 import { useAddresses } from '../hooks/useAddresses'
@@ -18,6 +19,7 @@ interface DraftLine {
 const emptyLine: DraftLine = { producto: '', cantidad: '1' }
 
 export default function OrdersPage() {
+  const { t } = useTranslation()
   const { data: orders = [], isLoading, isError } = useOrders()
   const { data: products = [] } = useProducts()
   const { data: addresses = [] } = useAddresses()
@@ -54,11 +56,11 @@ export default function OrdersPage() {
   const addressLabel = (id: number | null | undefined) => {
     if (id == null) return null
     const a = addresses.find((x) => x.id === id)
-    return a ? formatAddress(a) : `Dirección #${id}`
+    return a ? formatAddress(a) : `#${id}`
   }
 
   const productName = (id: number | string) =>
-    products.find((p) => p.id === Number(id))?.nombre ?? `Producto #${id}`
+    products.find((p) => p.id === Number(id))?.nombre ?? t('orders.productFallback', { id })
   const productPrice = (id: number | string) =>
     Number(products.find((p) => p.id === Number(id))?.precio ?? 0)
 
@@ -101,9 +103,9 @@ export default function OrdersPage() {
       setEstado('pendiente')
       setLines([])
       setLineDraft(emptyLine)
-      flash(`Pedido #${order.id} creado con ${lines.length} producto(s).`)
+      flash(t('admin.orders.created', { id: order.id, count: lines.length }))
     } catch {
-      setError('Error al crear el pedido. Verifica que el ID de usuario exista (Django Admin).')
+      setError(t('admin.orders.createError'))
     }
   }
 
@@ -125,7 +127,7 @@ export default function OrdersPage() {
 
   async function saveOrderMeta(orderId: number) {
     if (!editUsuario || Number(editUsuario) < 1) {
-      setError('El ID de usuario del comprador no es válido.')
+      setError(t('admin.orders.invalidUser'))
       return
     }
     try {
@@ -137,9 +139,9 @@ export default function OrdersPage() {
           direccion: editDireccion === '' ? null : Number(editDireccion),
         },
       })
-      flash(`Pedido #${orderId} actualizado.`)
+      flash(t('admin.orders.updated', { id: orderId }))
     } catch {
-      setError('No se pudo actualizar el pedido. Revisa el ID de usuario y la dirección.')
+      setError(t('admin.orders.updateError'))
     }
   }
 
@@ -152,49 +154,46 @@ export default function OrdersPage() {
         cantidad: Number(editLine.cantidad),
       })
       setEditLine(emptyLine)
-      flash(`Producto agregado al pedido #${orderId}.`)
+      flash(t('admin.orders.lineAdded', { id: orderId }))
     } catch {
-      setError('No se pudo agregar el producto.')
+      setError(t('admin.orders.addLineError'))
     }
   }
 
   async function removeLineFromOrder(detailId: number, orderId: number) {
-    if (!confirm('¿Quitar este producto del pedido?')) return
+    if (!confirm(t('admin.orders.confirmRemoveLine'))) return
     try {
       await deleteOrderDetail.mutateAsync(detailId)
-      flash(`Producto quitado del pedido #${orderId}.`)
+      flash(t('admin.orders.lineRemoved', { id: orderId }))
     } catch {
-      setError('No se pudo quitar el producto.')
+      setError(t('admin.orders.removeLineError'))
     }
   }
 
   async function handleDeleteOrder(id: number) {
-    if (!confirm('¿Eliminar este pedido y sus detalles?')) return
+    if (!confirm(t('admin.orders.confirmDeleteOrder'))) return
     try {
       await deleteOrder.mutateAsync(id)
-      flash('Pedido eliminado.')
+      flash(t('admin.orders.deleted'))
     } catch {
-      setError('No se pudo eliminar el pedido.')
+      setError(t('admin.orders.deleteError'))
     }
   }
 
   return (
     <div>
-      <h2>Pedidos</h2>
-      {(isError || error) && <p className="error">{error ?? 'No se pudo conectar con la API.'}</p>}
+      <h2>{t('admin.orders.title')}</h2>
+      {(isError || error) && <p className="error">{error ?? t('admin.common.connError')}</p>}
       {success && <p className="success">{success}</p>}
-      <p className="hint">
-        No hay endpoint de usuarios expuesto: usa el ID de un usuario existente (ver Django Admin en{' '}
-        <code>/admin/</code>). El precio y el total se calculan en el servidor.
-      </p>
+      <p className="hint">{t('admin.orders.hint')}</p>
 
       {/* Crear pedido y llenarlo en un solo formulario */}
       <form className="card form" onSubmit={handleCreate}>
-        <h3>Nuevo pedido</h3>
+        <h3>{t('admin.orders.newTitle')}</h3>
         <input
           type="number"
           min="1"
-          placeholder="ID de usuario"
+          placeholder={t('admin.orders.userIdPlaceholder')}
           value={usuario}
           onChange={(e) => setUsuario(e.target.value)}
           required
@@ -202,7 +201,7 @@ export default function OrdersPage() {
         <select value={estado} onChange={(e) => setEstado(e.target.value as OrderStatus)}>
           {ESTADOS.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {t(`status.${s}`)}
             </option>
           ))}
         </select>
@@ -212,7 +211,7 @@ export default function OrdersPage() {
             value={lineDraft.producto}
             onChange={(e) => setLineDraft({ ...lineDraft, producto: e.target.value })}
           >
-            <option value="">Selecciona producto</option>
+            <option value="">{t('admin.orders.selectProduct')}</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre} — S/. {p.precio}
@@ -222,12 +221,12 @@ export default function OrdersPage() {
           <input
             type="number"
             min="1"
-            placeholder="Cant."
+            placeholder={t('admin.orders.qtyShort')}
             value={lineDraft.cantidad}
             onChange={(e) => setLineDraft({ ...lineDraft, cantidad: e.target.value })}
           />
           <button type="button" onClick={addLineToDraft}>
-            Añadir producto
+            {t('admin.orders.addProduct')}
           </button>
         </div>
 
@@ -245,7 +244,7 @@ export default function OrdersPage() {
               </li>
             ))}
             <li className="draft-total">
-              <span>Total estimado</span>
+              <span>{t('admin.orders.estimatedTotal')}</span>
               <span>S/. {draftTotal.toFixed(2)}</span>
             </li>
           </ul>
@@ -253,15 +252,15 @@ export default function OrdersPage() {
 
         <div className="actions">
           <button type="submit" disabled={createOrder.isPending}>
-            {createOrder.isPending ? 'Guardando...' : 'Crear pedido'}
+            {createOrder.isPending ? t('admin.common.savingDots') : t('admin.orders.create')}
           </button>
         </div>
       </form>
 
       {isLoading ? (
-        <p>Cargando...</p>
+        <p>{t('admin.common.loadingDots')}</p>
       ) : orders.length === 0 ? (
-        <p className="hint">Aún no hay pedidos. Crea uno con el formulario de arriba.</p>
+        <p className="hint">{t('admin.orders.empty')}</p>
       ) : (
         <div className="cards-grid">
           {orders.map((order) => {
@@ -270,39 +269,40 @@ export default function OrdersPage() {
               <div className="card" key={order.id}>
                 <div className="row-actions">
                   <h3>
-                    Pedido <span className="id-chip">#{order.id}</span>
+                    {t('admin.orders.orderLabel')} <span className="id-chip">#{order.id}</span>
                   </h3>
                   <div className="card-btns">
                     {editing ? (
-                      <button onClick={cancelEdit}>Cerrar</button>
+                      <button onClick={cancelEdit}>{t('common.close')}</button>
                     ) : (
-                      <button onClick={() => startEdit(order)}>Editar</button>
+                      <button onClick={() => startEdit(order)}>{t('common.edit')}</button>
                     )}
                     <button onClick={() => handleDeleteOrder(order.id)} disabled={busy}>
-                      Eliminar
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
 
                 <p className="order-meta">
-                  Comprador: <strong>{order.usuario_username ?? `Usuario #${order.usuario}`}</strong>{' '}
-                  <span className="muted">(ID {order.usuario})</span> ·{' '}
+                  {t('admin.orders.buyer')}:{' '}
+                  <strong>{order.usuario_username ?? t('admin.orders.userFallback', { id: order.usuario })}</strong>{' '}
+                  <span className="muted">{t('admin.orders.idTag', { id: order.usuario })}</span> ·{' '}
                   {new Date(order.fecha).toLocaleString()} ·{' '}
-                  <span className={`status-badge status-${order.estado}`}>{order.estado}</span>
+                  <span className={`status-badge status-${order.estado}`}>{t(`status.${order.estado}`)}</span>
                 </p>
                 <p className="order-address">
-                  <strong>Envío: </strong>
+                  <strong>{t('admin.orders.shippingLabel')}</strong>
                   {order.direccion_detalle
                     ? formatAddress(order.direccion_detalle)
                     : addressLabel(order.direccion) ?? (
-                        <span className="muted">Sin dirección de envío</span>
+                        <span className="muted">{t('admin.orders.noShipping')}</span>
                       )}
                 </p>
                 <p>
-                  <strong>Total: S/. {Number(order.total).toFixed(2)}</strong>
+                  <strong>{t('admin.orders.totalLabel', { total: Number(order.total).toFixed(2) })}</strong>
                 </p>
 
-                <strong>Detalles</strong>
+                <strong>{t('admin.orders.detailsLabel')}</strong>
                 {order.detalles?.length ? (
                   <ul className="order-detail-list">
                     {order.detalles.map((d) => (
@@ -323,27 +323,27 @@ export default function OrdersPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="hint">Sin productos todavía.</p>
+                  <p className="hint">{t('admin.orders.noProducts')}</p>
                 )}
 
                 {editing && (
                   <div className="order-editor">
                     <div className="edit-fields">
                       <label className="edit-field">
-                        <span>Estado</span>
+                        <span>{t('admin.orders.statusField')}</span>
                         <select
                           value={editEstado}
                           onChange={(e) => setEditEstado(e.target.value as OrderStatus)}
                         >
                           {ESTADOS.map((s) => (
                             <option key={s} value={s}>
-                              {s}
+                              {t(`status.${s}`)}
                             </option>
                           ))}
                         </select>
                       </label>
                       <label className="edit-field">
-                        <span>Comprador (ID de usuario)</span>
+                        <span>{t('admin.orders.buyerField')}</span>
                         <input
                           type="number"
                           min="1"
@@ -352,12 +352,12 @@ export default function OrdersPage() {
                         />
                       </label>
                       <label className="edit-field">
-                        <span>Dirección de envío</span>
+                        <span>{t('admin.orders.shippingField')}</span>
                         <select
                           value={editDireccion}
                           onChange={(e) => setEditDireccion(e.target.value)}
                         >
-                          <option value="">Sin dirección</option>
+                          <option value="">{t('admin.orders.noAddressOption')}</option>
                           {addresses.map((a) => (
                             <option key={a.id} value={a.id}>
                               #{a.id} · {formatAddress(a)}
@@ -366,7 +366,7 @@ export default function OrdersPage() {
                         </select>
                       </label>
                       <button onClick={() => saveOrderMeta(order.id)} disabled={busy}>
-                        Guardar cambios
+                        {t('admin.common.saveChanges')}
                       </button>
                     </div>
                     <div className="line-builder">
@@ -374,7 +374,7 @@ export default function OrdersPage() {
                         value={editLine.producto}
                         onChange={(e) => setEditLine({ ...editLine, producto: e.target.value })}
                       >
-                        <option value="">Agregar producto…</option>
+                        <option value="">{t('admin.orders.addProductOption')}</option>
                         {products.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.nombre} — S/. {p.precio}
@@ -384,12 +384,12 @@ export default function OrdersPage() {
                       <input
                         type="number"
                         min="1"
-                        placeholder="Cant."
+                        placeholder={t('admin.orders.qtyShort')}
                         value={editLine.cantidad}
                         onChange={(e) => setEditLine({ ...editLine, cantidad: e.target.value })}
                       />
                       <button onClick={() => addLineToOrder(order.id)} disabled={busy}>
-                        Añadir
+                        {t('admin.orders.add')}
                       </button>
                     </div>
                   </div>

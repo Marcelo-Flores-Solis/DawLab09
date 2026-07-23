@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { PersonalDataForm } from '../lib/personalData'
 
 // Campos de datos personales reutilizables (perfil y checkout), con validación
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function PersonalDataFields({ value, onChange, full = false }: Props) {
+  const { t } = useTranslation()
   return (
     <>
       <input
@@ -16,20 +18,20 @@ export default function PersonalDataFields({ value, onChange, full = false }: Pr
         inputMode="numeric"
         maxLength={8}
         pattern="\d{8}"
-        title="8 dígitos"
-        placeholder="DNI (8 dígitos)"
+        title={t('personal.digits8')}
+        placeholder={t('personal.dniPlaceholder')}
         value={value.dni}
         onChange={(e) => onChange({ dni: e.target.value.replace(/\D/g, '').slice(0, 8) })}
       />
       <input
         name="nombres"
-        placeholder="Nombres"
+        placeholder={t('personal.nombres')}
         value={value.nombres}
         onChange={(e) => onChange({ nombres: e.target.value })}
       />
       <input
         name="apellidos"
-        placeholder="Apellidos"
+        placeholder={t('personal.apellidos')}
         value={value.apellidos}
         onChange={(e) => onChange({ apellidos: e.target.value })}
       />
@@ -38,8 +40,8 @@ export default function PersonalDataFields({ value, onChange, full = false }: Pr
         inputMode="numeric"
         maxLength={9}
         pattern="\d{9}"
-        title="9 dígitos"
-        placeholder="Teléfono (9 dígitos)"
+        title={t('personal.digits9')}
+        placeholder={t('personal.telefonoPlaceholder')}
         value={value.telefono}
         onChange={(e) => onChange({ telefono: e.target.value.replace(/\D/g, '').slice(0, 9) })}
       />
@@ -48,12 +50,12 @@ export default function PersonalDataFields({ value, onChange, full = false }: Pr
           <input
             name="correo"
             type="email"
-            placeholder="Correo electrónico"
+            placeholder={t('personal.correoPlaceholder')}
             value={value.correo}
             onChange={(e) => onChange({ correo: e.target.value })}
           />
           <label className="date-field">
-            <span className="muted">Fecha de nacimiento</span>
+            <span className="muted">{t('personal.fechaNacimiento')}</span>
             <input
               name="fecha_nacimiento"
               type="date"

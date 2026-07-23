@@ -1,17 +1,20 @@
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { logout, getUsername } from '../api/auth'
+import LanguageSwitcher from './LanguageSwitcher'
 import '../admin.css'
 
-const links = [
-  { to: '/admin', label: 'Productos', end: true },
-  { to: '/admin/categorias', label: 'Categorías' },
-  { to: '/admin/pedidos', label: 'Pedidos' },
-  { to: '/admin/direcciones', label: 'Direcciones' },
-]
-
 export default function AdminLayout() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const username = getUsername()
+
+  const links = [
+    { to: '/admin', label: t('admin.nav.products'), end: true },
+    { to: '/admin/categorias', label: t('admin.nav.categories') },
+    { to: '/admin/pedidos', label: t('admin.nav.orders') },
+    { to: '/admin/direcciones', label: t('admin.nav.addresses') },
+  ]
 
   function handleLogout() {
     logout()
@@ -22,7 +25,7 @@ export default function AdminLayout() {
     <div className="admin-panel">
       <header className="admin-topbar">
         <div className="admin-brand">
-          <span className="brand-mark">◆</span> Panel admin
+          <span className="brand-mark">◆</span> {t('admin.title')}
         </div>
         <nav>
           {links.map((link) => (
@@ -38,11 +41,12 @@ export default function AdminLayout() {
         </nav>
         <div className="admin-topbar-right">
           <span className="admin-user">{username}</span>
+          <LanguageSwitcher />
           <Link to="/" className="ghost-btn">
-            Ver tienda
+            {t('admin.viewStore')}
           </Link>
           <button className="ghost-btn" onClick={handleLogout}>
-            Salir
+            {t('nav.logout')}
           </button>
         </div>
       </header>

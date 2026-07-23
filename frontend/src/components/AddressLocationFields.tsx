@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { PERU, DEPARTAMENTOS } from '../data/peru'
 
 // Dos desplegables encadenados (Departamento -> Provincia) con datos reales del
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function AddressLocationFields({ departamento, provincia, onChange }: Props) {
+  const { t } = useTranslation()
   const provincias = departamento ? (PERU[departamento] ?? []) : []
 
   return (
@@ -20,7 +22,7 @@ export default function AddressLocationFields({ departamento, provincia, onChang
         onChange={(e) => onChange({ departamento: e.target.value, provincia: '' })}
         required
       >
-        <option value="">Departamento…</option>
+        <option value="">{t('address.departmentPlaceholder')}</option>
         {DEPARTAMENTOS.map((d) => (
           <option key={d} value={d}>
             {d}
@@ -35,7 +37,9 @@ export default function AddressLocationFields({ departamento, provincia, onChang
         required
         disabled={!departamento}
       >
-        <option value="">{departamento ? 'Provincia…' : 'Elige un departamento primero'}</option>
+        <option value="">
+          {departamento ? t('address.provincePlaceholder') : t('address.chooseDeptFirst')}
+        </option>
         {provincias.map((p) => (
           <option key={p} value={p}>
             {p}

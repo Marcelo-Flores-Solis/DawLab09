@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { logout, getUsername, isAuthenticated, getIsStaff } from '../api/auth'
 import { useCart } from '../hooks/useCart'
+import LanguageSwitcher from './LanguageSwitcher'
 
 // Barra de navegación de la tienda. En móvil, los enlaces y las acciones de
 // sesión se colapsan en un menú que abre el botón hamburguesa; el carrito queda
 // siempre visible.
 export default function Navbar() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { count, clear } = useCart()
@@ -42,30 +45,35 @@ export default function Navbar() {
       <div className={`store-menu ${menuOpen ? 'open' : ''}`}>
         <nav className="store-nav" onClick={closeMenu}>
           <NavLink to="/" end className={linkClass}>
-            Tienda
+            {t('nav.store')}
           </NavLink>
           {authed && (
             <NavLink to="/mis-pedidos" className={linkClass}>
-              Mis pedidos
+              {t('nav.myOrders')}
             </NavLink>
           )}
           {authed && (
             <NavLink to="/mi-perfil" className={linkClass}>
-              Mi perfil
+              {t('nav.myProfile')}
             </NavLink>
           )}
           {staff && (
             <NavLink to="/admin" className={linkClass}>
-              Panel admin
+              {t('nav.adminPanel')}
             </NavLink>
           )}
         </nav>
 
         <div className="store-auth">
-          {authed && <span className="store-user">Hola, {username || 'cliente'}</span>}
+          {authed && (
+            <span className="store-user">
+              {t('nav.hello', { name: username || t('nav.client') })}
+            </span>
+          )}
+          <LanguageSwitcher />
           {authed ? (
             <button className="ghost-btn" onClick={handleLogout}>
-              Salir
+              {t('nav.logout')}
             </button>
           ) : (
             <button
@@ -75,7 +83,7 @@ export default function Navbar() {
                 navigate('/login')
               }}
             >
-              Iniciar sesión
+              {t('nav.login')}
             </button>
           )}
         </div>
@@ -88,14 +96,14 @@ export default function Navbar() {
             closeMenu()
             navigate('/carrito')
           }}
-          aria-label="Ver carrito"
+          aria-label={t('nav.viewCart')}
         >
           <span className="cart-icon">🛒</span>
           {count > 0 && <span className="cart-badge">{count}</span>}
         </button>
         <button
           className="nav-toggle"
-          aria-label="Menú"
+          aria-label={t('nav.menu')}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((o) => !o)}
         >

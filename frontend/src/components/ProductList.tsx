@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Product } from '../types'
 import ProductCard from './ProductCard'
 
@@ -9,8 +10,9 @@ interface ProductListProps {
 
 // Rejilla de productos. Solo orquesta el mapeo a <ProductCard/> (Requisito 6).
 export default function ProductList({ products, categoryName, onAdd }: ProductListProps) {
+  const { t } = useTranslation()
   if (products.length === 0) {
-    return <p className="muted">No hay productos que coincidan con tu búsqueda.</p>
+    return <p className="muted">{t('store.noMatch')}</p>
   }
 
   return (

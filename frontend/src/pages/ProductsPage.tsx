@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   useProducts,
   useCreateProduct,
@@ -28,6 +29,7 @@ const emptyForm: ProductForm = {
 }
 
 export default function ProductsPage() {
+  const { t } = useTranslation()
   const { data: products = [], isLoading, isError } = useProducts()
   const { data: categories = [] } = useCategories()
   const createProduct = useCreateProduct()
@@ -60,15 +62,15 @@ export default function ProductsPage() {
     try {
       if (editingId) {
         await updateProduct.mutateAsync({ id: editingId, data: payload })
-        setSuccess('Producto actualizado.')
+        setSuccess(t('admin.products.updated'))
       } else {
         await createProduct.mutateAsync(payload)
-        setSuccess('Producto creado.')
+        setSuccess(t('admin.products.created'))
       }
       setForm(emptyForm)
       setEditingId(null)
     } catch {
-      setError('Error al guardar el producto. Revisa los campos (precio > 0, stock >= 0).')
+      setError(t('admin.products.saveError'))
     }
   }
 
@@ -90,29 +92,25 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este producto?')) return
+    if (!confirm(t('admin.products.confirmDelete'))) return
     await deleteProduct.mutateAsync(id)
-    setSuccess('Producto eliminado.')
+    setSuccess(t('admin.products.deleted'))
   }
 
   return (
     <div>
-      <h2>Productos</h2>
-      {(isError || error) && (
-        <p className="error">
-          {error ?? 'No se pudo conectar con la API. ¿Está corriendo el backend en :8000?'}
-        </p>
-      )}
+      <h2>{t('admin.products.title')}</h2>
+      {(isError || error) && <p className="error">{error ?? t('admin.products.connError')}</p>}
       {success && <p className="success">{success}</p>}
 
       <form className="card form" onSubmit={handleSubmit}>
-        <h3>{editingId ? 'Editar producto' : 'Nuevo producto'}</h3>
-        <input name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} required />
-        <textarea name="descripcion" placeholder="Descripción" value={form.descripcion} onChange={handleChange} required />
-        <input name="precio" type="number" step="0.01" min="0.01" placeholder="Precio" value={form.precio} onChange={handleChange} required />
-        <input name="stock" type="number" min="0" placeholder="Stock" value={form.stock} onChange={handleChange} required />
+        <h3>{editingId ? t('admin.products.editTitle') : t('admin.products.newTitle')}</h3>
+        <input name="nombre" placeholder={t('admin.common.name')} value={form.nombre} onChange={handleChange} required />
+        <textarea name="descripcion" placeholder={t('admin.common.description')} value={form.descripcion} onChange={handleChange} required />
+        <input name="precio" type="number" step="0.01" min="0.01" placeholder={t('admin.products.price')} value={form.precio} onChange={handleChange} required />
+        <input name="stock" type="number" min="0" placeholder={t('admin.products.stock')} value={form.stock} onChange={handleChange} required />
         <select name="categoria" value={form.categoria} onChange={handleChange} required>
-          <option value="">Selecciona categoría</option>
+          <option value="">{t('admin.products.selectCategory')}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
@@ -122,39 +120,39 @@ export default function ProductsPage() {
         <input
           name="imagen"
           type="url"
-          placeholder="URL de la imagen (opcional): https://…"
+          placeholder={t('admin.products.imageUrl')}
           value={form.imagen}
           onChange={handleChange}
         />
         {form.imagen.trim() && (
-          <img src={form.imagen.trim()} alt="Vista previa" className="img-preview" />
+          <img src={form.imagen.trim()} alt={t('admin.products.preview')} className="img-preview" />
         )}
         <div className="actions">
           <button type="submit" disabled={saving}>
-            {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear producto'}
+            {saving ? t('admin.common.savingDots') : editingId ? t('admin.common.saveChanges') : t('admin.products.create')}
           </button>
           {editingId && (
             <button type="button" onClick={cancelEdit} disabled={saving}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           )}
         </div>
       </form>
 
       {isLoading ? (
-        <p>Cargando...</p>
+        <p>{t('admin.common.loadingDots')}</p>
       ) : products.length === 0 ? (
-        <p className="hint">Aún no hay productos. Crea uno con el formulario de arriba.</p>
+        <p className="hint">{t('admin.products.empty')}</p>
       ) : (
         <table className="card">
           <thead>
             <tr>
               <th>ID</th>
               <th></th>
-              <th>Nombre</th>
-              <th>Precio</th>
-              <th>Stock</th>
-              <th>Categoría</th>
+              <th>{t('admin.common.name')}</th>
+              <th>{t('admin.products.price')}</th>
+              <th>{t('admin.products.stock')}</th>
+              <th>{t('admin.products.thCategory')}</th>
               <th></th>
             </tr>
           </thead>
@@ -174,8 +172,8 @@ export default function ProductsPage() {
                 <td>{p.stock}</td>
                 <td>{categories.find((c) => c.id === p.categoria)?.nombre ?? p.categoria}</td>
                 <td className="row-actions">
-                  <button onClick={() => startEdit(p)}>Editar</button>
-                  <button onClick={() => handleDelete(p.id)}>Eliminar</button>
+                  <button onClick={() => startEdit(p)}>{t('common.edit')}</button>
+                  <button onClick={() => handleDelete(p.id)}>{t('common.delete')}</button>
                 </td>
               </tr>
             ))}
