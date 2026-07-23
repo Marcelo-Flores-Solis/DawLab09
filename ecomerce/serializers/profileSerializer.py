@@ -5,9 +5,11 @@ from ecomerce.models.profile import Profile
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['dni', 'nombres', 'apellidos', 'telefono', 'correo', 'fecha_nacimiento']
+        fields = ['dni', 'nombres', 'apellidos', 'telefono', 'correo', 'fecha_nacimiento', 'saldo']
         # La unicidad del DNI se valida a mano (abajo) para no chocar con los
-        # perfiles que todavía lo tienen vacío (null).
+        # perfiles que todavía lo tienen vacío (null). El saldo es dinero de
+        # prueba: el cliente lo ve pero no lo edita (sólo baja al comprar).
+        read_only_fields = ['saldo']
         extra_kwargs = {'dni': {'validators': []}}
 
     def validate_dni(self, value):

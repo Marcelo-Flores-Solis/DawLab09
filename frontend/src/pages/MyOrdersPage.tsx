@@ -88,6 +88,12 @@ export default function MyOrdersPage() {
               </p>
             )}
 
+            {order.metodo_pago && (
+              <p className="muted order-payment">
+                💳 {t('myOrders.paidWith', { method: t(`payment.${order.metodo_pago}`) })}
+              </p>
+            )}
+
             <div className="order-total">
               <span>{t('common.total')}</span>
               <span>S/ {Number(order.total).toFixed(2)}</span>

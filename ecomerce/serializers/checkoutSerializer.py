@@ -26,3 +26,8 @@ class CheckoutSerializer(serializers.Serializer):
 
     items = CheckoutItemSerializer(many=True, allow_empty=False)
     direccion = serializers.IntegerField(required=False, allow_null=True)
+    # Método de pago simulado. Por ahora sólo el crédito procesa la compra;
+    # PayPal se acepta en el formulario pero aún no está operativo.
+    metodo_pago = serializers.ChoiceField(
+        choices=['credito', 'paypal'], required=False, default='credito',
+    )

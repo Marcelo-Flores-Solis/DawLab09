@@ -300,6 +300,9 @@ export default function OrdersPage() {
                 </p>
                 <p>
                   <strong>{t('admin.orders.totalLabel', { total: Number(order.total).toFixed(2) })}</strong>
+                  {order.metodo_pago && (
+                    <span className="muted"> · 💳 {t(`payment.${order.metodo_pago}`)}</span>
+                  )}
                 </p>
 
                 <strong>{t('admin.orders.detailsLabel')}</strong>

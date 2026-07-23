@@ -203,6 +203,34 @@ export default function ProfilePage() {
       </section>
 
       <section className="profile-section">
+        <h2>{t('profile.walletTitle')}</h2>
+        <p className="muted">{t('profile.walletHint')}</p>
+
+        <div className="wallet-grid">
+          <div className="pay-card pay-card-credit">
+            <div className="pay-card-head">
+              <span className="pay-icon">💳</span>
+              <span className="pay-badge">{t('cart.payCredit')}</span>
+            </div>
+            <span className="muted pay-card-label">{t('profile.creditLabel')}</span>
+            <strong className="pay-card-amount">
+              S/ {Number(profile?.saldo ?? 0).toFixed(2)}
+            </strong>
+            <span className="muted pay-card-caption">{t('profile.creditCaption')}</span>
+          </div>
+
+          <div className="pay-card pay-card-paypal">
+            <div className="pay-card-head">
+              <span className="pay-icon">🅿️</span>
+              <span className="pay-badge pay-badge-soon">{t('profile.paypalComingSoon')}</span>
+            </div>
+            <span className="pay-card-amount pay-card-brand">PayPal</span>
+            <span className="muted pay-card-caption">{t('profile.paypalConnected')}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="profile-section">
         <h2>{t('profile.addressesTitle')}</h2>
         <p className="muted">{t('profile.addressesHint')}</p>
 

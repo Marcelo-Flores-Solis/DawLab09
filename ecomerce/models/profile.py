@@ -21,5 +21,9 @@ class Profile(models.Model):
     correo = models.EmailField(blank=True, default='')
     fecha_nacimiento = models.DateField(null=True, blank=True)
 
+    # Crédito simulado (billetera de pruebas). Cada cuenta arranca con 5000 para
+    # poder probar las compras; el checkout descuenta de aquí.
+    saldo = models.DecimalField(max_digits=10, decimal_places=2, default=5000)
+
     def __str__(self):
         return f"Perfil de {self.user.username}"

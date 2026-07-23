@@ -45,12 +45,14 @@ export default function CartPage() {
   const createAddress = useCreateAddress()
   const { data: profile } = useProfile()
   const updateProfile = useUpdateProfile()
+  const creditBalance = Number(profile?.saldo ?? 0)
 
   const [selected, setSelected] = useState<number | null>(null)
   const [showNew, setShowNew] = useState(false)
   const [newAddr, setNewAddr] = useState(emptyAddress)
   const [contact, setContact] = useState<PersonalDataForm>(emptyPersonalData)
   const [contactLoaded, setContactLoaded] = useState(false)
+  const [metodoPago, setMetodoPago] = useState<'credito' | 'paypal'>('credito')
 
   // Preselecciona la primera dirección guardada cuando cargan.
   useEffect(() => {
@@ -128,6 +130,14 @@ export default function CartPage() {
       notify(t('toast.chooseAddress'), 'error')
       return
     }
+    if (metodoPago === 'paypal') {
+      notify(t('cart.paypalUnavailable'), 'error')
+      return
+    }
+    if (creditBalance < total) {
+      notify(t('cart.insufficientCredit'), 'error')
+      return
+    }
     // Guardamos (y revalidamos en el servidor) los datos de contacto en el
     // perfil antes de crear el pedido.
     try {
@@ -142,7 +152,7 @@ export default function CartPage() {
       return
     }
     checkout(
-      { items, direccion: selected },
+      { items, direccion: selected, metodoPago },
       {
         onSuccess: (order) => {
           clear()
@@ -175,6 +185,8 @@ export default function CartPage() {
   const needsAddress = authed && selected == null
   const showNewForm = authed && (showNew || addresses.length === 0)
   const contactBad = authed && personalDataErrors(contact, { require: true }) !== null
+  const paypalSelected = authed && metodoPago === 'paypal'
+  const insufficientCredit = authed && metodoPago === 'credito' && creditBalance < total
   const busy = placing || updateProfile.isPending
 
   return (
@@ -272,6 +284,50 @@ export default function CartPage() {
           )}
 
           {authed && (
+            <div className="checkout-payment">
+              <h3>{t('cart.paymentTitle')}</h3>
+              <ul className="pay-choices">
+                <li>
+                  <label className={`pay-choice ${metodoPago === 'credito' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      checked={metodoPago === 'credito'}
+                      onChange={() => setMetodoPago('credito')}
+                    />
+                    <span className="pay-choice-icon">💳</span>
+                    <span className="pay-choice-text">
+                      <strong>{t('cart.payCredit')}</strong>
+                      <span className={insufficientCredit ? 'error' : 'muted'}>
+                        {t('cart.payCreditBalance', { balance: creditBalance.toFixed(2) })}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+                <li>
+                  <label className={`pay-choice ${metodoPago === 'paypal' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      checked={metodoPago === 'paypal'}
+                      onChange={() => setMetodoPago('paypal')}
+                    />
+                    <span className="pay-choice-icon">🅿️</span>
+                    <span className="pay-choice-text">
+                      <strong>{t('cart.payPaypal')}</strong>
+                      <span className="muted">{t('cart.payPaypalNote')}</span>
+                    </span>
+                  </label>
+                </li>
+              </ul>
+              {paypalSelected && <p className="error pay-note">{t('cart.paypalUnavailable')}</p>}
+              {insufficientCredit && (
+                <p className="error pay-note">{t('cart.insufficientCredit')}</p>
+              )}
+            </div>
+          )}
+
+          {authed && (
             <div className="checkout-address">
               <h3>{t('cart.shippingTitle')}</h3>
 
@@ -336,7 +392,9 @@ export default function CartPage() {
           <button
             className="add-btn checkout-btn"
             onClick={handleCheckout}
-            disabled={busy || hasStale || contactBad || needsAddress}
+            disabled={
+              busy || hasStale || contactBad || needsAddress || paypalSelected || insufficientCredit
+            }
           >
             {busy
               ? t('cart.processing')
@@ -348,7 +406,11 @@ export default function CartPage() {
                     ? t('cart.completeData')
                     : needsAddress
                       ? t('cart.addAddressCta')
-                      : t('cart.confirm')}
+                      : paypalSelected
+                        ? t('cart.paypalUnavailable')
+                        : insufficientCredit
+                          ? t('cart.insufficientCredit')
+                          : t('cart.confirm')}
           </button>
           <Link to="/" className="continue-link">
             {t('common.continueShopping')}

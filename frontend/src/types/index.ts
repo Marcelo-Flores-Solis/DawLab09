@@ -29,6 +29,8 @@ export interface OrderDetail {
   subtotal: string
 }
 
+export type PaymentMethod = 'credito' | 'paypal'
+
 export interface Order {
   id: number
   usuario: number // FK -> User.id
@@ -36,6 +38,7 @@ export interface Order {
   estado: OrderStatus
   fecha: string
   total: string
+  metodo_pago?: PaymentMethod // método de pago usado
   direccion?: number | null // FK -> Address.id (dirección de envío, opcional)
   direccion_detalle?: Address | null // dirección de envío completa (solo lectura)
   detalles?: OrderDetail[]
@@ -58,6 +61,7 @@ export interface Profile {
   telefono: string
   correo: string
   fecha_nacimiento: string | null
+  saldo?: string // crédito simulado (DRF DecimalField -> string), solo lectura
 }
 
 // Ítem del carrito local (persistido en localStorage, no viene del backend).

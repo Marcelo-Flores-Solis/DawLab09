@@ -7,7 +7,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
-from ecomerce.models import Address, Order, OrderDetail, Product
+from ecomerce.models import Address, Order, OrderDetail, Product, Profile
 from ecomerce.serializers import OrderSerializer
 from ecomerce.serializers.checkoutSerializer import CheckoutSerializer
 
@@ -63,6 +63,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         items = serializer.validated_data['items']
         direccion_id = serializer.validated_data.get('direccion')
+        metodo_pago = serializer.validated_data.get('metodo_pago', 'credito')
+
+        # Por ahora sólo se puede pagar con el crédito simulado. PayPal está en
+        # la interfaz como método guardado, pero todavía no procesa compras.
+        if metodo_pago != 'credito':
+            raise ValidationError(
+                'PayPal todavía no está disponible. Completa tu compra con tu crédito.'
+            )
 
         # La dirección de envío (si se envía) debe pertenecer al usuario: nadie
         # puede enviar un pedido a la dirección guardada de otra persona.
@@ -123,8 +131,27 @@ class OrderViewSet(viewsets.ModelViewSet):
                         f'quedan {producto.stock} y pediste {cantidad}.'
                     )
 
+            # Total previsto, para validar el crédito antes de tocar el stock.
+            total = sum(
+                productos[pid].precio * cantidad for pid, cantidad in cantidades.items()
+            )
+
+            # Cobro con crédito simulado: bloqueamos el perfil (evita doble gasto
+            # en compras concurrentes) y comprobamos que alcance.
+            profile, _ = Profile.objects.select_for_update().get_or_create(
+                user=request.user
+            )
+            if profile.saldo < total:
+                raise ValidationError(
+                    f'Crédito insuficiente: tienes S/ {profile.saldo:.2f} y el '
+                    f'total es S/ {total:.2f}.'
+                )
+
             order = Order.objects.create(
-                usuario=request.user, estado='pendiente', direccion=direccion,
+                usuario=request.user,
+                estado='pagado',
+                direccion=direccion,
+                metodo_pago=metodo_pago,
             )
             for pid, cantidad in cantidades.items():
                 producto = productos[pid]
@@ -138,5 +165,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                 producto.save(update_fields=['stock'])
 
             order.recalcular_total()
+
+            # Descontamos el crédito una vez confirmado el total real del pedido.
+            profile.saldo -= order.total
+            profile.save(update_fields=['saldo'])
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)

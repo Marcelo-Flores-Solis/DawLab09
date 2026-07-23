@@ -13,9 +13,20 @@ class Order(models.Model):
         ('enviado', 'Enviado'),
     ]
 
+    METODOS_PAGO = [
+        ('credito', 'Crédito'),
+        ('paypal', 'PayPal'),
+    ]
+
     usuario = models.ForeignKey(
         User,
         on_delete=models.CASCADE
+    )
+
+    metodo_pago = models.CharField(
+        max_length=20,
+        choices=METODOS_PAGO,
+        default='credito',
     )
 
     # Dirección de envío elegida en el checkout. Nullable para no romper pedidos
