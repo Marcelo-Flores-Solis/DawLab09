@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useRegister } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 export default function RegisterPage() {
   const { t } = useTranslation()
@@ -58,6 +59,10 @@ export default function RegisterPage() {
         <span className="aura-blob aura-blob-1" />
         <span className="aura-blob aura-blob-2" />
         <span className="aura-blob aura-blob-3" />
+      </div>
+
+      <div className="auth-lang">
+        <LanguageSwitcher />
       </div>
 
       <div className="login-card">

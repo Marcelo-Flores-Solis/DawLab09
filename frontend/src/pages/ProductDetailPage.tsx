@@ -4,6 +4,7 @@ import { useProduct } from '../hooks/useProducts'
 import { useCategories } from '../hooks/useCategories'
 import { useCart } from '../hooks/useCart'
 import { useToast } from '../hooks/useToast'
+import { useCategoryName } from '../hooks/useCategoryName'
 import ProductThumb from '../components/ProductThumb'
 
 // Detalle de un artículo. Consume la ruta /producto/:id (Requisito 3) leyendo el
@@ -17,6 +18,7 @@ export default function ProductDetailPage() {
   const { data: categories = [] } = useCategories()
   const { addItem } = useCart()
   const { notify } = useToast()
+  const catName = useCategoryName()
 
   if (isLoading) return <p className="muted page-pad">{t('product.loading')}</p>
 
@@ -33,7 +35,8 @@ export default function ProductDetailPage() {
     )
   }
 
-  const categoryName = categories.find((c) => c.id === product.categoria)?.nombre ?? t('product.general')
+  const rawCategory = categories.find((c) => c.id === product.categoria)?.nombre
+  const categoryName = rawCategory ? catName(rawCategory) : t('product.general')
   const outOfStock = product.stock <= 0
 
   function handleAdd() {

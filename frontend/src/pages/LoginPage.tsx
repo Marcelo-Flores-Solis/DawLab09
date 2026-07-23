@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useLogin } from '../hooks/useAuth'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 interface LocationState {
   from?: string
@@ -31,6 +32,10 @@ export default function LoginPage() {
         <span className="aura-blob aura-blob-1" />
         <span className="aura-blob aura-blob-2" />
         <span className="aura-blob aura-blob-3" />
+      </div>
+
+      <div className="auth-lang">
+        <LanguageSwitcher />
       </div>
 
       <div className="login-card">

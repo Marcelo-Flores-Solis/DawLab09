@@ -4,11 +4,13 @@ import { useProducts } from '../hooks/useProducts'
 import { useCategories } from '../hooks/useCategories'
 import { useCart } from '../hooks/useCart'
 import { useToast } from '../hooks/useToast'
+import { useCategoryName } from '../hooks/useCategoryName'
 import ProductList from '../components/ProductList'
 import type { Product } from '../types'
 
 export default function StorePage() {
   const { t } = useTranslation()
+  const catName = useCategoryName()
   const { data: products = [], isLoading, isError } = useProducts()
   const { data: categories = [] } = useCategories()
 
@@ -21,8 +23,11 @@ export default function StorePage() {
   const categoryName = useMemo(() => {
     const map = new Map<number, string>()
     categories.forEach((c) => map.set(c.id, c.nombre))
-    return (id: number) => map.get(id)
-  }, [categories])
+    return (id: number) => {
+      const raw = map.get(id)
+      return raw ? catName(raw) : undefined
+    }
+  }, [categories, catName])
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -78,7 +83,7 @@ export default function StorePage() {
                 className={`chip ${activeCat === String(c.id) ? 'chip-active' : ''}`}
                 onClick={() => setActiveCat(String(c.id))}
               >
-                {c.nombre}
+                {catName(c.nombre)}
               </button>
             ))}
           </div>

@@ -880,6 +880,14 @@ button {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Selector de idioma en las pantallas de acceso (esquina superior derecha). */
+.auth-lang {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+}
+
 /* Enlace para alternar entre login y registro. */
 .auth-switch {
   margin-top: 18px;
