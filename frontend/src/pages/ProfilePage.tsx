@@ -24,6 +24,19 @@ function toForm(p?: Profile): PersonalDataForm {
   }
 }
 
+// ¿El perfil tiene algún dato que valga la pena mostrar? El backend crea el
+// perfil vacío en el primer acceso, así que distinguimos "vacío" de "completo".
+function hasPersonalData(p?: Profile): boolean {
+  if (!p) return false
+  return Boolean(p.dni || p.nombres || p.apellidos || p.telefono || p.correo || p.fecha_nacimiento)
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return '—'
+  const [y, m, d] = value.split('-')
+  return d && m && y ? `${d}/${m}/${y}` : value
+}
+
 const emptyAddress = { calle: '', ciudad: '', provincia: '' }
 
 export default function ProfilePage() {
@@ -34,6 +47,8 @@ export default function ProfilePage() {
   const updateProfile = useUpdateProfile()
   const [personal, setPersonal] = useState<PersonalDataForm>(emptyPersonalData)
   const [loaded, setLoaded] = useState(false)
+  // El formulario está oculto por defecto: sólo se muestra al editar.
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     if (!loaded && profile) {
@@ -41,6 +56,17 @@ export default function ProfilePage() {
       setLoaded(true)
     }
   }, [profile, loaded])
+
+  function startEditing() {
+    // Rellenamos el formulario con lo que hay guardado antes de abrirlo.
+    setPersonal(toForm(profile))
+    setEditing(true)
+  }
+
+  function cancelEditing() {
+    setPersonal(toForm(profile))
+    setEditing(false)
+  }
 
   async function savePersonal(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -59,10 +85,14 @@ export default function ProfilePage() {
         fecha_nacimiento: personal.fecha_nacimiento || null,
       })
       notify('Datos personales guardados')
+      // Guardado con éxito: cerramos el formulario y volvemos a la vista estática.
+      setEditing(false)
     } catch (err) {
       notify(err instanceof Error ? err.message : 'No se pudieron guardar tus datos', 'error')
     }
   }
+
+  const hasData = hasPersonalData(profile)
 
   // --- Direcciones ---
   const { data: addresses = [], isLoading, isError } = useAddresses()
@@ -100,16 +130,76 @@ export default function ProfilePage() {
       <h1 className="page-title">Mi perfil</h1>
 
       <section className="profile-section">
-        <h2>Información personal</h2>
+        <div className="profile-section-head">
+          <h2>Información personal</h2>
+          {!editing && hasData && (
+            <button className="ghost-btn" type="button" onClick={startEditing}>
+              Editar
+            </button>
+          )}
+        </div>
         <p className="muted">
           Estos datos se usan en tus compras (se autocompletan al confirmar un pedido).
         </p>
-        <form className="form profile-form" onSubmit={savePersonal}>
-          <PersonalDataFields value={personal} onChange={(patch) => setPersonal({ ...personal, ...patch })} full />
-          <button className="add-btn" type="submit" disabled={updateProfile.isPending}>
-            {updateProfile.isPending ? 'Guardando…' : 'Guardar datos'}
-          </button>
-        </form>
+
+        {editing ? (
+          <form className="form profile-form" onSubmit={savePersonal}>
+            <PersonalDataFields
+              value={personal}
+              onChange={(patch) => setPersonal({ ...personal, ...patch })}
+              full
+            />
+            <div className="profile-form-actions">
+              <button className="add-btn" type="submit" disabled={updateProfile.isPending}>
+                {updateProfile.isPending ? 'Guardando…' : 'Guardar datos'}
+              </button>
+              {hasData && (
+                <button
+                  className="ghost-btn"
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={updateProfile.isPending}
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+        ) : hasData ? (
+          <dl className="profile-card">
+            <div className="profile-field">
+              <dt>Nombres</dt>
+              <dd>{profile?.nombres || '—'}</dd>
+            </div>
+            <div className="profile-field">
+              <dt>Apellidos</dt>
+              <dd>{profile?.apellidos || '—'}</dd>
+            </div>
+            <div className="profile-field">
+              <dt>DNI</dt>
+              <dd>{profile?.dni || '—'}</dd>
+            </div>
+            <div className="profile-field">
+              <dt>Teléfono</dt>
+              <dd>{profile?.telefono || '—'}</dd>
+            </div>
+            <div className="profile-field">
+              <dt>Correo</dt>
+              <dd>{profile?.correo || '—'}</dd>
+            </div>
+            <div className="profile-field">
+              <dt>Fecha de nacimiento</dt>
+              <dd>{formatDate(profile?.fecha_nacimiento ?? null)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <div className="profile-empty">
+            <p className="muted">Aún no has completado tus datos personales.</p>
+            <button className="add-btn" type="button" onClick={startEditing}>
+              Completar mis datos
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="profile-section">

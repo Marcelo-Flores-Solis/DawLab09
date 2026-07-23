@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { logout, getUsername, isAuthenticated, getIsStaff } from '../api/auth'
 import { useCart } from '../hooks/useCart'
 
@@ -8,6 +9,7 @@ import { useCart } from '../hooks/useCart'
 // siempre visible.
 export default function Navbar() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { count, clear } = useCart()
   const authed = isAuthenticated()
   const staff = getIsStaff()
@@ -19,6 +21,9 @@ export default function Navbar() {
   function handleLogout() {
     clear()
     logout()
+    // Vaciamos la caché en memoria (perfil, direcciones, pedidos…) para que la
+    // sesión del siguiente usuario no herede los datos de quien acaba de salir.
+    queryClient.clear()
     closeMenu()
     navigate('/', { replace: true })
   }

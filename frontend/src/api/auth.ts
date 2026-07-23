@@ -36,7 +36,6 @@ export function getUsername(): string | null {
   return localStorage.getItem('username')
 }
 
-// ¿El JWT ya expiró? Lee el claim `exp` (segundos epoch). Sin token o ilegible
 // se considera expirado.
 function isJwtExpired(token: string | null): boolean {
   if (!token) return true
@@ -53,14 +52,10 @@ function isJwtExpired(token: string | null): boolean {
 }
 
 export function isAuthenticated(): boolean {
-  // Hay sesión si el access token sigue vigente, o si el refresh token todavía
-  // permite renovarlo. Un token totalmente expirado ya no cuenta como sesión,
-  // así evitamos mostrar rutas protegidas que fallarían en la siguiente llamada.
+
   return !isJwtExpired(getAccessToken()) || !isJwtExpired(getRefreshToken())
 }
 
-// Decodifica el payload del JWT sin verificar la firma (sólo para leer claims
-// no sensibles en el cliente; la autoridad real la tiene el backend).
 function decodeToken(): JwtClaims | null {
   const token = getAccessToken()
   if (!token) return null
@@ -72,13 +67,11 @@ function decodeToken(): JwtClaims | null {
   }
 }
 
-// Id del usuario autenticado, tomado del token (no de un input) para que un
-// cliente sólo pueda operar a su propio nombre.
+
 export function getUserId(): number | null {
   return decodeToken()?.user_id ?? null
 }
 
-// Rol: ¿es staff/administrador? Se usa para mostrar y proteger el panel admin.
 export function getIsStaff(): boolean {
   return Boolean(decodeToken()?.is_staff)
 }
